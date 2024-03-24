@@ -129,7 +129,7 @@ class MysqlDatabaser extends AbstractDatabaser
      *
      * @throws DatabaserException
      */
-    protected function executeQueries(string $queries): mysqli_result|false
+    protected function executeQueries(string $queries): object|false
     {
         if (!isset($this->connection)) {
             $this->connect();
@@ -162,6 +162,6 @@ class MysqlDatabaser extends AbstractDatabaser
             $this->connect();
         }
 
-        return '\'' . $this->connection->real_escape_string($string) . '\'';
+        return "'" . $this->connection->real_escape_string($string) . "'";
     }
 }

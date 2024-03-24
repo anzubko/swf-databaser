@@ -7,15 +7,15 @@ final class Databaser
     /**
      * Columns are returned as numeric arrays.
      */
-    public const NUM = 1;
+    public const int NUM = 1;
 
     /**
      * Columns are returned as associative arrays.
      */
-    public const ASSOC = 2;
+    public const int ASSOC = 2;
 
     /**
      * Columns are returned as objects.
      */
-    public const OBJECT = 3;
+    public const int OBJECT = 3;
 }

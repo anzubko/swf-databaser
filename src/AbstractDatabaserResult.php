@@ -17,10 +17,10 @@ use function is_string;
 
 abstract class AbstractDatabaserResult implements DatabaserResultInterface
 {
-    protected const INT = 1;
-    protected const FLOAT = 2;
-    protected const BOOL = 3;
-    protected const JSON = 4;
+    protected const int INT = 1;
+    protected const int FLOAT = 2;
+    protected const int BOOL = 3;
+    protected const int JSON = 4;
 
     /** @var string[] */
     protected array $colNames = [];
@@ -270,7 +270,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
 
         return $this;
     }
-    
+
     /**
      * @param array<int|string,mixed>|object $row
      *

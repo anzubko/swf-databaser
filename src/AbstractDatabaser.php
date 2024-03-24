@@ -18,22 +18,22 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * Special mark for regular query.
      */
-    protected const REGULAR = 0;
+    protected const int REGULAR = 0;
 
     /**
      * Special mark for begin query.
      */
-    protected const BEGIN = 1;
+    protected const int BEGIN = 1;
 
     /**
      * Special mark for commit query.
      */
-    protected const COMMIT = 2;
+    protected const int COMMIT = 2;
 
     /**
      * Special mark for rollback query.
      */
-    protected const ROLLBACK = 3;
+    protected const int ROLLBACK = 3;
 
     /**
      * Queries queue.
@@ -213,7 +213,6 @@ abstract class AbstractDatabaser implements DatabaserInterface
         }
 
         $queries = array_column($this->queries, 1);
-
         $this->queries = [];
 
         $timer = gettimeofday(true);
@@ -224,7 +223,6 @@ abstract class AbstractDatabaser implements DatabaserInterface
             $timer = gettimeofday(true) - $timer;
 
             self::$timer += $timer;
-
             self::$counter++;
 
             if (isset($this->profiler)) {

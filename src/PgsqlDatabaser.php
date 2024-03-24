@@ -112,7 +112,7 @@ class PgsqlDatabaser extends AbstractDatabaser
      *
      * @throws DatabaserException
      */
-    protected function executeQueries(string $queries): PgSqlResult
+    protected function executeQueries(string $queries): object
     {
         if (!isset($this->connection)) {
             $this->connect();
@@ -125,14 +125,9 @@ class PgsqlDatabaser extends AbstractDatabaser
 
         $lastError = pg_last_error($this->connection);
         if (preg_match('/^ERROR:\s*([\dA-Z]{5}):\s*(.+)/u', $lastError, $M)) {
-            throw (new DatabaserException($M[2]))
-                ->setSqlState($M[1])
-                ->addSqlStateToMessage()
-            ;
+            throw (new DatabaserException($M[2]))->setSqlState($M[1])->addSqlStateToMessage();
         } else {
-            throw (new DatabaserException($lastError))
-                ->addSqlStateToMessage()
-            ;
+            throw (new DatabaserException($lastError))->addSqlStateToMessage();
         }
     }
 
