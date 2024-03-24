@@ -18,22 +18,22 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * Special mark for regular query.
      */
-    protected const int REGULAR = 0;
+    protected const REGULAR = 0;
 
     /**
      * Special mark for begin query.
      */
-    protected const int BEGIN = 1;
+    protected const BEGIN = 1;
 
     /**
      * Special mark for commit query.
      */
-    protected const int COMMIT = 2;
+    protected const COMMIT = 2;
 
     /**
      * Special mark for rollback query.
      */
-    protected const int ROLLBACK = 3;
+    protected const ROLLBACK = 3;
 
     /**
      * Queries queue.
