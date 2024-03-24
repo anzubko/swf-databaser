@@ -272,9 +272,9 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     }
 
     /**
-     * @param array<int|string,mixed>|object $row
+     * @param mixed[]|object $row
      *
-     * @return array<int|string,mixed>
+     * @return mixed[]
      */
     private function camelizeRow(array|object $row): array
     {

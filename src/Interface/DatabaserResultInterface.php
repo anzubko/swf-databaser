@@ -27,7 +27,7 @@ interface DatabaserResultInterface
     /**
      * Fetches next result row as associative array.
      *
-     * @return array<int|string,mixed>|false
+     * @return mixed[]|false
      */
     public function fetchAssoc(): array|false;
 
