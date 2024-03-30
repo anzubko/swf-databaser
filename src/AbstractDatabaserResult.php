@@ -22,10 +22,14 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     protected const BOOL = 3;
     protected const JSON = 4;
 
-    /** @var string[] */
+    /**
+     * @var string[]
+     */
     protected array $colNames = [];
 
-    /** @var int[] */
+    /**
+     * @var int[]
+     */
     protected array $colTypes = [];
 
     private ?int $mode = null;
