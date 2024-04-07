@@ -17,23 +17,23 @@ class PgsqlDatabaser extends AbstractDatabaser
      * @param string|null $db Database name.
      * @param string|null $user Username.
      * @param string|null $pass Password.
-     * @param bool|null $persistent Makes connection persistent.
-     * @param string|null $charset Default charset.
-     * @param int|null $mode Mode for fetchAll() method.
+     * @param bool $persistent Makes connection persistent.
+     * @param string $charset Default charset.
+     * @param int $mode Mode for fetchAll() method.
      * @param bool $camelize Convert result to camel case.
      *
      * @see Databaser
      */
     public function __construct(
-        protected ?string $host = null,
-        protected ?int $port = null,
+        protected ?string $host = 'localhost',
+        protected ?int $port = 5432,
         protected ?string $db = null,
         protected ?string $user = null,
         protected ?string $pass = null,
-        protected ?bool $persistent = null,
-        protected ?string $charset = null,
-        ?int $mode = null,
-        bool $camelize = false,
+        protected bool $persistent = false,
+        protected string $charset = 'utf-8',
+        int $mode = Databaser::ASSOC,
+        bool $camelize = true,
     ) {
         $this->mode = $mode;
         $this->camelize = $camelize;
@@ -50,8 +50,7 @@ class PgsqlDatabaser extends AbstractDatabaser
             return;
         }
 
-        $connect = ($this->persistent ?? false) ? 'pg_pconnect' : 'pg_connect';
-        $connection = $connect(
+        $connection = ($this->persistent ? 'pg_pconnect' : 'pg_connect')(
             sprintf(
                 'host=%s port=%s dbname=%s user=%s password=%s',
                 $this->host ?? 'localhost',
@@ -64,18 +63,13 @@ class PgsqlDatabaser extends AbstractDatabaser
         );
 
         if (false === $connection) {
-            throw (new DatabaserException('Error in the process of establishing a connection'))
-                ->addSqlStateToMessage()
-            ;
+            throw (new DatabaserException('Error in the process of establishing a connection'))->addSqlStateToMessage();
         }
 
         pg_set_error_verbosity($connection, PGSQL_ERRORS_VERBOSE);
 
-        $charset = $this->charset ?? 'utf-8';
-        if (-1 === pg_set_client_encoding($connection, $charset)) {
-            throw (new DatabaserException(sprintf('Unable to set charset %s', $charset)))
-                ->addSqlStateToMessage()
-            ;
+        if (-1 === pg_set_client_encoding($connection, $this->charset)) {
+            throw (new DatabaserException(sprintf('Unable to set charset %s', $this->charset)))->addSqlStateToMessage();
         }
 
         $this->connection = $connection;

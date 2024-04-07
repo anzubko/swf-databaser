@@ -18,23 +18,23 @@ class MysqlDatabaser extends AbstractDatabaser
      * @param string|null $db Database name.
      * @param string|null $user Username.
      * @param string|null $pass Password.
-     * @param bool|null $persistent Makes connection persistent.
-     * @param string|null $charset Default charset.
-     * @param int|null $mode Mode for fetchAll() method.
+     * @param bool $persistent Makes connection persistent.
+     * @param string $charset Default charset.
+     * @param int $mode Mode for fetchAll() method.
      * @param bool $camelize Convert result to camel case.
      *
      * @see Databaser
      */
     public function __construct(
-        protected ?string $host = null,
-        protected ?int $port = null,
+        protected ?string $host = 'localhost',
+        protected ?int $port = 3306,
         protected ?string $db = null,
         protected ?string $user = null,
         protected ?string $pass = null,
-        protected ?bool $persistent = null,
-        protected ?string $charset = null,
-        ?int $mode = null,
-        bool $camelize = false,
+        protected bool $persistent = false,
+        protected string $charset = 'utf8mb4',
+        int $mode = Databaser::ASSOC,
+        bool $camelize = true,
     ) {
         $this->mode = $mode;
         $this->camelize = $camelize;
@@ -61,7 +61,7 @@ class MysqlDatabaser extends AbstractDatabaser
             $this->host = 'localhost';
         }
 
-        if ($this->persistent ?? false) {
+        if ($this->persistent) {
             $this->host = sprintf('p:%s', $this->host);
         }
 
@@ -75,12 +75,9 @@ class MysqlDatabaser extends AbstractDatabaser
                 $socket,
             );
 
-            $this->connection->set_charset($this->charset ?? 'utf8mb4');
+            $this->connection->set_charset($this->charset);
         } catch (mysqli_sql_exception $e) {
-            throw (new DatabaserException($e->getMessage()))
-                ->setSqlState($e->getSqlState())
-                ->addSqlStateToMessage()
-            ;
+            throw (new DatabaserException($e->getMessage()))->setSqlState($e->getSqlState())->addSqlStateToMessage();
         }
     }
 
@@ -142,10 +139,7 @@ class MysqlDatabaser extends AbstractDatabaser
                 $result = $this->connection->store_result();
             } while ($this->connection->next_result());
         } catch (mysqli_sql_exception $e) {
-            throw (new DatabaserException($e->getMessage()))
-                ->setSqlState($e->getSqlState())
-                ->addSqlStateToMessage()
-            ;
+            throw (new DatabaserException($e->getMessage()))->setSqlState($e->getSqlState())->addSqlStateToMessage();
         }
 
         return $result;

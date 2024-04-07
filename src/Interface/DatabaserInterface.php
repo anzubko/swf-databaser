@@ -137,7 +137,7 @@ interface DatabaserInterface
     /**
      * Sets mode for fetchAll() method.
      */
-    public function setMode(?int $mode): self;
+    public function setMode(int $mode): self;
 
     /**
      * Convert result to camel case.

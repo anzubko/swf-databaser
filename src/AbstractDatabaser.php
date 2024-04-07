@@ -50,12 +50,12 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * Mode for fetchAll() method.
      */
-    protected ?int $mode = null;
+    protected int $mode;
 
     /**
      * Convert result to camel case.
      */
-    protected bool $camelize = false;
+    protected bool $camelize;
 
     /**
      * External profiler for queries.
@@ -429,7 +429,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function setMode(?int $mode): self
+    public function setMode(int $mode): self
     {
         $this->mode = $mode;
 
