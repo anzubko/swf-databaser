@@ -10,7 +10,6 @@ use function count;
 use function is_array;
 use function is_bool;
 use function is_numeric;
-use function is_object;
 use function is_scalar;
 
 abstract class AbstractDatabaser implements DatabaserInterface
@@ -335,10 +334,14 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function every(array $expressions, string $default = 'true'): string
+    public function every(array $expressions, string $default = 'true', bool $duplicates = true): string
     {
         if (count($expressions) === 0) {
             return $default;
+        }
+
+        if (!$duplicates) {
+            $expressions = $this->removeDuplicates($expressions);
         }
 
         return implode(' AND ', $expressions);
@@ -347,10 +350,14 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function any(array $expressions, string $default = 'true'): string
+    public function any(array $expressions, string $default = 'true', bool $duplicates = true): string
     {
         if (count($expressions) === 0) {
             return $default;
+        }
+
+        if (!$duplicates) {
+            $expressions = $this->removeDuplicates($expressions);
         }
 
         return implode(' OR ', $expressions);
@@ -359,10 +366,14 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function commas(array $expressions, string $default = 'true'): string
+    public function commas(array $expressions, string $default = 'true', bool $duplicates = true): string
     {
         if (count($expressions) === 0) {
             return $default;
+        }
+
+        if (!$duplicates) {
+            $expressions = $this->removeDuplicates($expressions);
         }
 
         return implode(', ', $expressions);
@@ -371,10 +382,14 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function pluses(array $expressions, string $default = ''): string
+    public function pluses(array $expressions, string $default = '', bool $duplicates = true): string
     {
         if (count($expressions) === 0) {
             return $default;
+        }
+
+        if (!$duplicates) {
+            $expressions = $this->removeDuplicates($expressions);
         }
 
         return implode(' + ', $expressions);
@@ -383,10 +398,14 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function spaces(array $expressions, string $default = ''): string
+    public function spaces(array $expressions, string $default = '', bool $duplicates = true): string
     {
         if (count($expressions) === 0) {
             return $default;
+        }
+
+        if (!$duplicates) {
+            $expressions = $this->removeDuplicates($expressions);
         }
 
         return implode(' ', $expressions);
@@ -444,5 +463,20 @@ abstract class AbstractDatabaser implements DatabaserInterface
         $this->camelize = $camelize;
 
         return $this;
+    }
+
+    /**
+     * @param string[] $expressions
+     *
+     * @return string[]
+     */
+    private function removeDuplicates(array $expressions): array
+    {
+        $uniqueExpressions = [];
+        foreach ($expressions as $expression) {
+            $uniqueExpressions[md5(strtolower(trim(preg_replace('/\s+/', ' ', $expression))))] = $expression;
+        }
+
+        return array_values($uniqueExpressions);
     }
 }
