@@ -474,7 +474,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     {
         $uniqueExpressions = [];
         foreach ($expressions as $expression) {
-            $uniqueExpressions[md5(strtolower(trim(preg_replace('/\s+/', ' ', $expression))))] = $expression;
+            $uniqueExpressions[md5(strtolower(trim((string) preg_replace('/\s+/', ' ', $expression))))] = $expression;
         }
 
         return array_values($uniqueExpressions);
