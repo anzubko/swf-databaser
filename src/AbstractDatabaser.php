@@ -37,7 +37,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * Queries queue.
      *
-     * @var array{int, string}[]
+     * @var mixed[]
      */
     protected array $queries = [];
 
