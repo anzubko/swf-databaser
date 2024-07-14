@@ -5,8 +5,7 @@ namespace SWF;
 use SWF\Interface\DatabaserResultInterface;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
-use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
-use Symfony\Component\Serializer\Exception\PartialDenormalizationException;
+use Symfony\Component\Serializer\NameConverter\CamelCaseToSnakeCaseNameConverter;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
@@ -32,11 +31,14 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
      */
     protected array $colTypes = [];
 
-    private ?int $mode = null;
+    protected ?int $mode = null;
 
-    private bool $camelize = false;
+    protected bool $camelize = false;
 
-    private Serializer $serializer;
+    /**
+     * @var Serializer[]
+     */
+    private static array $serializers = [];
 
     /**
      * Fetches all result rows as numeric array.
@@ -50,17 +52,15 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws NotNormalizableValueException
-     * @throws PartialDenormalizationException
      */
     public function fetchAll(?string $className = null): array
     {
-        if (null !== $className) {
-            $mode = Databaser::OBJECT;
-            $this->serializer ??= $this->getSerializer();
-        } else {
+        if (null === $className) {
             $mode = $this->mode ?? Databaser::ASSOC;
+            $serializer = null;
+        } else {
+            $mode = Databaser::OBJECT;
+            $serializer = $this->getSerializer();
         }
 
         $rows = [];
@@ -77,10 +77,10 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
                     if ($this->camelize) {
                         $row = $this->camelizeRow($row);
                     }
-                    if (null !== $className) {
-                        $row = $this->serializer->denormalize($row, $className);
-                    } else {
+                    if (null === $className) {
                         $row = (object) $row;
+                    } else {
+                        $row = $serializer->denormalize($row, $className);
                     }
                     break;
                 default:
@@ -109,6 +109,21 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     /**
      * @inheritDoc
      */
+    public function iterateRow(): iterable
+    {
+        while (false !== ($row = $this->fetchNextRow())) {
+            $row = $this->typifyRow($row);
+            if ($this->camelize) {
+                $row = $this->camelizeRow($row);
+            }
+
+            yield $row;
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function fetchRow(): array|false
     {
         $row = $this->fetchNextRow();
@@ -122,6 +137,21 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         }
 
         return $row;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function iterateAssoc(): iterable
+    {
+        while (false !== ($row = $this->fetchNextRow())) {
+            $row = array_combine($this->colNames, $this->typifyRow($row));
+            if ($this->camelize) {
+                $row = $this->camelizeRow($row);
+            }
+
+            yield $row;
+        }
     }
 
     /**
@@ -144,9 +174,30 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws NotNormalizableValueException
-     * @throws PartialDenormalizationException
+     */
+    public function iterateObject(?string $className = null): iterable
+    {
+        while (false !== ($row = $this->fetchNextRow())) {
+            $row = array_combine($this->colNames, $this->typifyRow($row, null !== $className));
+            if ($this->camelize) {
+                $row = $this->camelizeRow($row);
+            }
+
+            if (null === $className) {
+                $row = (object) $row;
+            } else {
+                $row = $this->getSerializer()->denormalize($row, $className);
+                if (!is_object($row)) {
+                    break;
+                }
+            }
+
+            yield $row;
+        }
+    }
+
+    /**
+     * @inheritDoc
      */
     public function fetchObject(?string $className = null): object|false
     {
@@ -164,9 +215,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
             return (object) $row;
         }
 
-        $this->serializer ??= $this->getSerializer();
-
-        $row = $this->serializer->denormalize($row, $className);
+        $row = $this->getSerializer()->denormalize($row, $className);
 
         return is_object($row) ? $row : false;
     }
@@ -177,6 +226,23 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     protected function fetchNextRowColumn(int $i): false|float|int|null|string
     {
         return false;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function iterateColumn(int $i = 0): iterable
+    {
+        while (false !== ($column = $this->fetchNextRowColumn($i))) {
+            if (isset($column, $this->colTypes[$i])) {
+                $column = $this->typify($column, $this->colTypes[$i]);
+                if (is_array($column)) {
+                    return $this->camelizeRow($column);
+                }
+            }
+
+            yield $column;
+        }
     }
 
     /**
@@ -305,7 +371,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
      *
      * @return mixed[]
      */
-    private function typifyRow(array $row, bool $assoc = true): array
+    protected function typifyRow(array $row, bool $assoc = true): array
     {
         foreach ($this->colTypes as $i => $type) {
             if (null === $row[$i]) {
@@ -315,7 +381,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
             $row[$i] = match ($type) {
                 self::INT => (int) $row[$i],
                 self::FLOAT => (float) $row[$i],
-                self::BOOL => ('t' === $row[$i]),
                 self::JSON => json_decode((string) $row[$i], $assoc),
                 default => $row[$i],
             };
@@ -324,12 +389,11 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         return $row;
     }
 
-    private function typify(mixed $value, int $type): mixed
+    protected function typify(mixed $value, int $type): mixed
     {
         return match ($type) {
             self::INT => (int) $value,
             self::FLOAT => (float) $value,
-            self::BOOL => ('t' === $value),
             self::JSON => json_decode((string) $value, true),
             default => $value,
         };
@@ -337,10 +401,11 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
 
     private function getSerializer(): Serializer
     {
-        return new Serializer([
+        return self::$serializers[$this->camelize] ??= new Serializer([
             new DateTimeNormalizer(),
             new ArrayDenormalizer(),
             new ObjectNormalizer(
+                nameConverter: $this->camelize ? null : new CamelCaseToSnakeCaseNameConverter(),
                 propertyTypeExtractor: new PropertyInfoExtractor(
                     typeExtractors: [
                         new PhpDocExtractor(),

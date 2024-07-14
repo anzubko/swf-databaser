@@ -6,8 +6,14 @@ use PgSql\Result as PgSqlResult;
 
 class PgsqlDatabaserResult extends AbstractDatabaserResult
 {
-    public function __construct(private readonly PgSqlResult $result)
-    {
+    public function __construct(
+        private readonly PgSqlResult $result,
+        ?int $mode,
+        bool $camelize,
+    ) {
+        $this->mode = $mode;
+        $this->camelize = $camelize;
+
         $numFields = pg_num_fields($this->result);
 
         for ($i = 0; $i < $numFields; $i++) {
@@ -89,5 +95,38 @@ class PgsqlDatabaserResult extends AbstractDatabaserResult
     public function numRows(): int
     {
         return pg_num_rows($this->result);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function typifyRow(array $row, bool $assoc = true): array
+    {
+        foreach ($this->colTypes as $i => $type) {
+            if (null === $row[$i]) {
+                continue;
+            }
+
+            $row[$i] = match ($type) {
+                self::INT => (int) $row[$i],
+                self::FLOAT => (float) $row[$i],
+                self::BOOL => ('t' === $row[$i]),
+                self::JSON => json_decode((string) $row[$i], $assoc),
+                default => $row[$i],
+            };
+        }
+
+        return $row;
+    }
+
+    protected function typify(mixed $value, int $type): mixed
+    {
+        return match ($type) {
+            self::INT => (int) $value,
+            self::FLOAT => (float) $value,
+            self::BOOL => ('t' === $value),
+            self::JSON => json_decode((string) $value, true),
+            default => $value,
+        };
     }
 }

@@ -99,12 +99,10 @@ class MysqlDatabaser extends AbstractDatabaser
     protected function assignResult(object|false $result): DatabaserResultInterface
     {
         if ($result instanceof mysqli_result) {
-            $result = new MysqlDatabaserResult($result, (int) $this->connection->affected_rows);
-        } else {
-            $result = new EmptyDatabaserResult();
+            return new MysqlDatabaserResult($result, (int) $this->connection->affected_rows, $this->mode, $this->camelize);
         }
 
-        return $result->setMode($this->mode)->setCamelize($this->camelize);
+        return new EmptyDatabaserResult();
     }
 
     /**

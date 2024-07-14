@@ -9,7 +9,12 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
     public function __construct(
         private readonly mysqli_result $result,
         private readonly int $affectedRows,
+        ?int $mode,
+        bool $camelize,
     ) {
+        $this->mode = $mode;
+        $this->camelize = $camelize;
+
         if (0 === $this->result->field_count) {
             return;
         }

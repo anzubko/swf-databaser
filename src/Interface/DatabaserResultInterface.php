@@ -18,11 +18,25 @@ interface DatabaserResultInterface
     public function fetchAll(?string $className = null): array;
 
     /**
+     * Iterates next result row as numeric array.
+     *
+     * @return iterable<mixed>
+     */
+    public function iterateRow(): iterable;
+
+    /**
      * Fetches next result row as numeric array.
      *
      * @return mixed[]|false
      */
     public function fetchRow(): array|false;
+
+    /**
+     * Iterates next result row as associative array.
+     *
+     * @return iterable<mixed>
+     */
+    public function iterateAssoc(): iterable;
 
     /**
      * Fetches next result row as associative array.
@@ -32,12 +46,29 @@ interface DatabaserResultInterface
     public function fetchAssoc(): array|false;
 
     /**
+     * Iterates next result row as object.
+     *
+     * @return iterable<object>
+     *
+     * @throws NotNormalizableValueException
+     * @throws PartialDenormalizationException
+     */
+    public function iterateObject(?string $className = null): iterable;
+
+    /**
      * Fetches next result row as object.
      *
      * @throws NotNormalizableValueException
      * @throws PartialDenormalizationException
      */
     public function fetchObject(?string $className = null): object|false;
+
+    /**
+     * Iterates next result row column.
+     *
+     * @return iterable<mixed>
+     */
+    public function iterateColumn(int $i = 0): iterable;
 
     /**
      * Fetches next result row column.
