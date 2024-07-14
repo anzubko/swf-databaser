@@ -21,8 +21,6 @@ class PgsqlDatabaser extends AbstractDatabaser
      * @param string $charset Default charset.
      * @param int $mode Mode for fetchAll() method.
      * @param bool $camelize Convert result to camel case.
-     *
-     * @see Databaser
      */
     public function __construct(
         protected ?string $host = 'localhost',
@@ -41,8 +39,6 @@ class PgsqlDatabaser extends AbstractDatabaser
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     protected function connect(): void
     {
@@ -101,8 +97,6 @@ class PgsqlDatabaser extends AbstractDatabaser
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     protected function executeQueries(string $queries): object
     {
@@ -125,8 +119,6 @@ class PgsqlDatabaser extends AbstractDatabaser
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     protected function escapeString(string $string): string
     {

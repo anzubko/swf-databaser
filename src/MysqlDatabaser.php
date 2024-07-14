@@ -22,8 +22,6 @@ class MysqlDatabaser extends AbstractDatabaser
      * @param string $charset Default charset.
      * @param int $mode Mode for fetchAll() method.
      * @param bool $camelize Convert result to camel case.
-     *
-     * @see Databaser
      */
     public function __construct(
         protected ?string $host = 'localhost',
@@ -42,8 +40,6 @@ class MysqlDatabaser extends AbstractDatabaser
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     protected function connect(): void
     {
@@ -67,12 +63,12 @@ class MysqlDatabaser extends AbstractDatabaser
 
         try {
             $this->connection = new mysqli(
-                $this->host,
-                $this->user,
-                $this->pass,
-                $this->db,
-                $this->port ?? 3306,
-                $socket,
+                hostname: $this->host,
+                username: $this->user,
+                password: $this->pass,
+                database: $this->db,
+                port: $this->port ?? 3306,
+                socket: $socket,
             );
 
             $this->connection->set_charset($this->charset);
@@ -107,8 +103,6 @@ class MysqlDatabaser extends AbstractDatabaser
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     public function lastInsertId(): int
     {
@@ -121,8 +115,6 @@ class MysqlDatabaser extends AbstractDatabaser
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     protected function executeQueries(string $queries): object|false
     {
@@ -145,8 +137,6 @@ class MysqlDatabaser extends AbstractDatabaser
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     protected function escapeString(string $string): string
     {

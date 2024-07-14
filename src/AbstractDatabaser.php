@@ -85,15 +85,9 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     public function begin(?string $isolation = null): self
     {
-        if ($this->inTrans) {
-            $this->rollback();
-        }
-
         $this->queries[] = [self::BEGIN, $this->makeBeginCommand($isolation)];
 
         $this->inTrans = true;
@@ -103,12 +97,10 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     public function commit(): self
     {
-        if ($this->queries && self::BEGIN === end($this->queries)[0]) {
+        if (count($this->queries) > 0 && self::BEGIN === end($this->queries)[0]) {
             array_pop($this->queries);
         } else {
             $this->queries[] = [self::COMMIT, 'COMMIT'];
@@ -123,12 +115,10 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     public function rollback(): self
     {
-        if ($this->queries && self::BEGIN === end($this->queries)[0]) {
+        if (count($this->queries) > 0 && self::BEGIN === end($this->queries)[0]) {
             array_pop($this->queries);
         } else {
             $this->queries[] = [self::ROLLBACK, 'ROLLBACK'];
@@ -143,8 +133,6 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     public function queue(string $query): self
     {
@@ -171,8 +159,6 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     public function query(string $query): DatabaserResultInterface
     {
@@ -183,8 +169,6 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     public function flush(): self
     {
@@ -283,8 +267,6 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     public function string(mixed $string, string $null = 'null'): string
     {
@@ -306,8 +288,6 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws DatabaserException
      */
     public function scalar(mixed $scalar, string $null = 'null'): string
     {
