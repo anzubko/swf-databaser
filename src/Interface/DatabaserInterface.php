@@ -84,35 +84,42 @@ interface DatabaserInterface
      *
      * @param string[] $expressions
      */
-    public function every(array $expressions, string $default = 'true', bool $duplicates = true): string;
+    public function every(array $expressions, string $default = 'true'): string;
 
     /**
      * Joins expressions for WHERE.
      *
      * @param string[] $expressions
      */
-    public function any(array $expressions, string $default = 'true', bool $duplicates = true): string;
+    public function any(array $expressions, string $default = 'true'): string;
 
     /**
      * Joins expressions for SELECT or ORDER.
      *
      * @param string[] $expressions
      */
-    public function commas(array $expressions, string $default = 'true', bool $duplicates = true): string;
+    public function commas(array $expressions, string $default = 'true'): string;
+
+    /**
+     * Joins expressions with parentheses for multi INSERT.
+     *
+     * @param string[] $expressions
+     */
+    public function parentheses(array $expressions, string $default = ''): string;
 
     /**
      * Joins expressions with pluses.
      *
      * @param string[] $expressions
      */
-    public function pluses(array $expressions, string $default = '', bool $duplicates = true): string;
+    public function pluses(array $expressions, string $default = ''): string;
 
     /**
      * Joins expressions with spaces.
      *
      * @param string[] $expressions
      */
-    public function spaces(array $expressions, string $default = '', bool $duplicates = true): string;
+    public function spaces(array $expressions, string $default = ''): string;
 
     /**
      * Gets timer of executed queries.

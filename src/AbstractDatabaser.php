@@ -334,81 +334,49 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function every(array $expressions, string $default = 'true', bool $duplicates = true): string
+    public function every(array $expressions, string $default = 'true'): string
     {
-        if (count($expressions) === 0) {
-            return $default;
-        }
-
-        if (!$duplicates) {
-            $expressions = $this->removeDuplicates($expressions);
-        }
-
-        return implode(' AND ', $expressions);
+        return count($expressions) === 0 ? $default : implode(' AND ', $expressions);
     }
 
     /**
      * @inheritDoc
      */
-    public function any(array $expressions, string $default = 'true', bool $duplicates = true): string
+    public function any(array $expressions, string $default = 'true'): string
     {
-        if (count($expressions) === 0) {
-            return $default;
-        }
-
-        if (!$duplicates) {
-            $expressions = $this->removeDuplicates($expressions);
-        }
-
-        return implode(' OR ', $expressions);
+        return count($expressions) === 0 ? $default : implode(' OR ', $expressions);
     }
 
     /**
      * @inheritDoc
      */
-    public function commas(array $expressions, string $default = 'true', bool $duplicates = true): string
+    public function commas(array $expressions, string $default = 'true'): string
     {
-        if (count($expressions) === 0) {
-            return $default;
-        }
-
-        if (!$duplicates) {
-            $expressions = $this->removeDuplicates($expressions);
-        }
-
-        return implode(', ', $expressions);
+        return count($expressions) === 0 ? $default : implode(', ', $expressions);
     }
 
     /**
      * @inheritDoc
      */
-    public function pluses(array $expressions, string $default = '', bool $duplicates = true): string
+    public function parentheses(array $expressions, string $default = ''): string
     {
-        if (count($expressions) === 0) {
-            return $default;
-        }
-
-        if (!$duplicates) {
-            $expressions = $this->removeDuplicates($expressions);
-        }
-
-        return implode(' + ', $expressions);
+        return count($expressions) === 0 ? $default : implode(', ', array_map(fn($e) => sprintf('(%s)', $e), $expressions));
     }
 
     /**
      * @inheritDoc
      */
-    public function spaces(array $expressions, string $default = '', bool $duplicates = true): string
+    public function pluses(array $expressions, string $default = ''): string
     {
-        if (count($expressions) === 0) {
-            return $default;
-        }
+        return count($expressions) === 0 ? $default : implode(' + ', $expressions);
+    }
 
-        if (!$duplicates) {
-            $expressions = $this->removeDuplicates($expressions);
-        }
-
-        return implode(' ', $expressions);
+    /**
+     * @inheritDoc
+     */
+    public function spaces(array $expressions, string $default = ''): string
+    {
+        return count($expressions) === 0 ? $default : implode(' ', $expressions);
     }
 
     /**
@@ -463,20 +431,5 @@ abstract class AbstractDatabaser implements DatabaserInterface
         $this->camelize = $camelize;
 
         return $this;
-    }
-
-    /**
-     * @param string[] $expressions
-     *
-     * @return string[]
-     */
-    private function removeDuplicates(array $expressions): array
-    {
-        $uniqueExpressions = [];
-        foreach ($expressions as $expression) {
-            $uniqueExpressions[md5(strtolower(trim((string) preg_replace('/\s+/', ' ', $expression))))] = $expression;
-        }
-
-        return array_values($uniqueExpressions);
     }
 }
