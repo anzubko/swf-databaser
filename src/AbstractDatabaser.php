@@ -55,10 +55,12 @@ abstract class AbstractDatabaser implements DatabaserInterface
     {
         $this->depth->inc();
 
-        if (1 === $this->depth->get() && null === $isolation) {
-            $this->queue->add($this->beginCommand, DatabaserQueue::BEGIN);
-        } elseif (1 === $this->depth->get()) {
-            $this->queue->add(sprintf($this->beginWithIsolationCommand, $isolation), DatabaserQueue::BEGIN);
+        if (1 === $this->depth->get()) {
+            if (null === $isolation) {
+                $this->queue->add($this->beginCommand, DatabaserQueue::BEGIN);
+            } else {
+                $this->queue->add(sprintf($this->beginWithIsolationCommand, $isolation), DatabaserQueue::BEGIN);
+            }
         } elseif (null !== $this->createSavePointCommand) {
             $this->queue->add(sprintf($this->createSavePointCommand, $this->getSavePointName()), DatabaserQueue::SAVEPOINT);
         }
@@ -82,13 +84,15 @@ abstract class AbstractDatabaser implements DatabaserInterface
             $this->queue->pop();
             $this->depth->dec();
             $this->execute();
-        } elseif ($this->depth->get() > 1 && null === $this->releaseSavePointCommand) {
-            $this->depth->dec();
-            $this->execute();
         } elseif ($this->depth->get() > 1) {
-            $this->queue->add(sprintf($this->releaseSavePointCommand, $this->getSavePointName()));
-            $this->execute();
-            $this->depth->dec();
+            if (null === $this->releaseSavePointCommand) {
+                $this->depth->dec();
+                $this->execute();
+            } else {
+                $this->queue->add(sprintf($this->releaseSavePointCommand, $this->getSavePointName()));
+                $this->execute();
+                $this->depth->dec();
+            }
         } else {
             $this->queue->add($this->commitCommand);
             $this->execute();
@@ -126,12 +130,14 @@ abstract class AbstractDatabaser implements DatabaserInterface
             $this->queue->pop();
             $this->depth->dec();
             $this->execute();
-        } elseif ($this->depth->get() > 1 && null === $this->rollbackToSavePointCommand) {
-            $this->depth->dec();
-            $this->execute();
         } elseif ($this->depth->get() > 1) {
-            $this->queue(sprintf($this->rollbackToSavePointCommand, $this->getSavePointName()))->flush();
-            $this->depth->dec();
+            if (null === $this->rollbackToSavePointCommand) {
+                $this->depth->dec();
+                $this->execute();
+            } else {
+                $this->queue(sprintf($this->rollbackToSavePointCommand, $this->getSavePointName()))->flush();
+                $this->depth->dec();
+            }
         } else {
             $this->queue($this->rollbackCommand)->flush();
             $this->depth->dec();
