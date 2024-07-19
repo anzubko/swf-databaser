@@ -14,83 +14,54 @@ use function is_scalar;
 
 abstract class AbstractDatabaser implements DatabaserInterface
 {
-    /**
-     * Special mark for regular query.
-     */
-    protected const REGULAR = 0;
+    protected string $beginCommand;
 
-    /**
-     * Special mark for begin query.
-     */
-    protected const BEGIN = 1;
+    protected string $beginWithIsolationCommand;
 
-    /**
-     * Special mark for commit query.
-     */
-    protected const COMMIT = 2;
+    protected string $commitCommand;
 
-    /**
-     * Special mark for rollback query.
-     */
-    protected const ROLLBACK = 3;
+    protected string $rollbackCommand;
 
-    /**
-     * Queries queue.
-     *
-     * @var mixed[]
-     */
-    protected array $queries = [];
+    protected ?string $createSavePointCommand = null;
 
-    /**
-     * In transaction flag.
-     */
-    protected bool $inTrans = false;
+    protected ?string $releaseSavePointCommand = null;
 
-    /**
-     * Mode for fetchAll() method.
-     */
-    protected int $mode;
+    protected ?string $rollbackToSavePointCommand = null;
 
-    /**
-     * Convert result to camel case.
-     */
-    protected bool $camelize;
+    protected int $mode = Databaser::ASSOC;
 
-    /**
-     * External profiler for queries.
-     */
-    protected Closure $profiler;
+    protected bool $camelize = true;
 
-    /**
-     * Timer of executed queries.
-     */
-    protected static float $timer = 0.0;
+    private DatabaserQueue $queue;
 
-    /**
-     * Count of executed queries.
-     */
-    protected static int $counter = 0;
+    private DatabaserDepth $depth;
 
-    /**
-     * Connects to database on demand.
-     *
-     * @throws DatabaserException
-     */
-    abstract protected function connect(): void;
+    private Closure $profiler;
 
-    /**
-     * Begin command is different at different databases.
-     */
-    abstract protected function makeBeginCommand(?string $isolation): string;
+    private static float $timer = 0.0;
+
+    private static int $counter = 0;
+
+    public function __construct()
+    {
+        $this->queue = new DatabaserQueue();
+        $this->depth = new DatabaserDepth();
+    }
 
     /**
      * @inheritDoc
      */
     public function begin(?string $isolation = null): self
     {
-        $this->queries[] = [self::BEGIN, $this->makeBeginCommand($isolation)];
+        $this->depth->inc();
 
-        $this->inTrans = true;
+        if (1 === $this->depth->get() && null === $isolation) {
+            $this->queue->add($this->beginCommand, DatabaserQueue::BEGIN);
+        } elseif (1 === $this->depth->get()) {
+            $this->queue->add(sprintf($this->beginWithIsolationCommand, $isolation), DatabaserQueue::BEGIN);
+        } elseif (null !== $this->createSavePointCommand) {
+            $this->queue->add(sprintf($this->createSavePointCommand, $this->getSavePointName()), DatabaserQueue::SAVEPOINT);
+        }
 
         return $this;
     }
@@ -100,15 +71,29 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function commit(): self
     {
-        if (count($this->queries) > 0 && self::BEGIN === end($this->queries)[0]) {
-            array_pop($this->queries);
-        } else {
-            $this->queries[] = [self::COMMIT, 'COMMIT'];
+        if (null !== $this->createSavePointCommand) {
+            while (DatabaserQueue::SAVEPOINT === $this->queue->getLastType()) {
+                $this->queue->pop();
+                $this->depth->dec();
+            }
         }
 
-        $this->execute();
-
-        $this->inTrans = false;
+        if (DatabaserQueue::BEGIN === $this->queue->getLastType()) {
+            $this->queue->pop();
+            $this->depth->dec();
+            $this->execute();
+        } elseif ($this->depth->get() > 1 && null === $this->releaseSavePointCommand) {
+            $this->depth->dec();
+            $this->execute();
+        } elseif ($this->depth->get() > 1) {
+            $this->queue->add(sprintf($this->releaseSavePointCommand, $this->getSavePointName()));
+            $this->execute();
+            $this->depth->dec();
+        } else {
+            $this->queue->add($this->commitCommand);
+            $this->execute();
+            $this->depth->dec();
+        }
 
         return $this;
     }
@@ -116,19 +101,55 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function rollback(): self
+    public function rollback(bool $full = false): self
     {
-        if (count($this->queries) > 0 && self::BEGIN === end($this->queries)[0]) {
-            array_pop($this->queries);
-        } else {
-            $this->queries[] = [self::ROLLBACK, 'ROLLBACK'];
+        if ($full) {
+            if ($this->depth->get() > 0) {
+                $this->queue->add($this->rollbackCommand);
+                $this->execute();
+                $this->depth->reset();
+            }
+
+            $this->queue->clear();
+
+            return $this;
         }
 
-        $this->execute();
+        if (null !== $this->createSavePointCommand) {
+            while (DatabaserQueue::SAVEPOINT === $this->queue->getLastType()) {
+                $this->queue->pop();
+                $this->depth->dec();
+            }
+        }
 
-        $this->inTrans = false;
+        if (DatabaserQueue::BEGIN === $this->queue->getLastType()) {
+            $this->queue->pop();
+            $this->depth->dec();
+            $this->execute();
+        } elseif ($this->depth->get() > 1 && null === $this->rollbackToSavePointCommand) {
+            $this->depth->dec();
+            $this->execute();
+        } elseif ($this->depth->get() > 1) {
+            $this->queue(sprintf($this->rollbackToSavePointCommand, $this->getSavePointName()))->flush();
+            $this->depth->dec();
+        } else {
+            $this->queue($this->rollbackCommand)->flush();
+            $this->depth->dec();
+        }
 
         return $this;
+    }
+
+    abstract protected function assignResult(object|false $result): DatabaserResultInterface;
+
+    /**
+     * @inheritDoc
+     */
+    public function query(string $query): DatabaserResultInterface
+    {
+        $this->queue->add($query);
+
+        return $this->assignResult($this->execute());
     }
 
     /**
@@ -136,35 +157,12 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function queue(string $query): self
     {
-        $this->queries[] = [self::REGULAR, $query];
-        if (count($this->queries) > 64) {
+        $this->queue->add($query);
+        if ($this->queue->count() > 64) {
             $this->execute();
         }
 
         return $this;
-    }
-
-    /**
-     * Assigns result to local class.
-     */
-    abstract protected function assignResult(object|false $result): DatabaserResultInterface;
-
-    /**
-     * @inheritDoc
-     */
-    public function lastInsertId(): int
-    {
-        return 0;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function query(string $query): DatabaserResultInterface
-    {
-        $this->queries[] = [self::REGULAR, $query];
-
-        return $this->assignResult($this->execute());
     }
 
     /**
@@ -178,34 +176,36 @@ abstract class AbstractDatabaser implements DatabaserInterface
     }
 
     /**
-     * Executes bundle queries at once.
-     *
+     * @inheritDoc
+     */
+    public function lastInsertId(): int
+    {
+        return 0;
+    }
+
+    /**
      * @throws DatabaserException
      */
     abstract protected function executeQueries(string $queries): object|false;
 
     /**
-     * Executes all queued queries and returns result.
-     *
      * @throws DatabaserException
      */
     protected function execute(): object|false
     {
-        if (empty($this->queries)) {
+        if (0 === $this->queue->count()) {
             return false;
         }
 
-        $queries = array_column($this->queries, 1);
-        $this->queries = [];
-
         $timer = gettimeofday(true);
+
+        $queries = $this->queue->takeAwayQueries();
 
         try {
             $result = $this->executeQueries(implode('; ', $queries));
         } finally {
-            $timer = gettimeofday(true) - $timer;
+            self::$timer += $timer = gettimeofday(true) - $timer;
 
-            self::$timer += $timer;
             self::$counter++;
 
             if (isset($this->profiler)) {
@@ -217,8 +217,6 @@ abstract class AbstractDatabaser implements DatabaserInterface
     }
 
     /**
-     * Escapes special characters in a string.
-     *
      * @throws DatabaserException
      */
     abstract protected function escapeString(string $string): string;
@@ -380,7 +378,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function isInTrans(): bool
     {
-        return $this->inTrans;
+        return $this->depth->get() > 0;
     }
 
     /**
@@ -411,5 +409,10 @@ abstract class AbstractDatabaser implements DatabaserInterface
         $this->camelize = $camelize;
 
         return $this;
+    }
+
+    private function getSavePointName(): string
+    {
+        return sprintf('SWF_POINT_%d', $this->depth->get() - 1);
     }
 }

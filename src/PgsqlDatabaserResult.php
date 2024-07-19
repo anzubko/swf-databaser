@@ -39,33 +39,21 @@ class PgsqlDatabaserResult extends AbstractDatabaserResult
         }
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function fetchAllRows(): array
     {
         return pg_fetch_all($this->result, PGSQL_NUM);
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function fetchNextRow(): array|false
     {
         return pg_fetch_row($this->result);
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function fetchNextRowColumn(int $i): false|null|string
     {
         return pg_fetch_result($this->result, $i);
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function fetchAllRowsColumns(int $i): array
     {
         return pg_fetch_all_columns($this->result, $i);
@@ -97,9 +85,6 @@ class PgsqlDatabaserResult extends AbstractDatabaserResult
         return pg_num_rows($this->result);
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function typifyRow(array $row, bool $assoc = true): array
     {
         foreach ($this->colTypes as $i => $type) {

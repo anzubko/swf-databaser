@@ -41,8 +41,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     private static array $serializers = [];
 
     /**
-     * Fetches all result rows as numeric array.
-     *
      * @return mixed[][]
      */
     protected function fetchAllRows(): array
@@ -97,8 +95,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     }
 
     /**
-     * Fetches next result row as numeric array.
-     *
      * @return mixed[]|false
      */
     protected function fetchNextRow(): array|false
@@ -220,9 +216,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         return is_object($row) ? $row : false;
     }
 
-    /**
-     * Fetches next result row column.
-     */
     protected function fetchNextRowColumn(int $i): false|float|int|null|string
     {
         return false;
@@ -266,8 +259,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     }
 
     /**
-     * Fetches all result rows columns.
-     *
      * @return mixed[]
      */
     protected function fetchAllRowsColumns(int $i): array

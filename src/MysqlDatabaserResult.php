@@ -43,33 +43,21 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
         }
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function fetchAllRows(): array
     {
         return $this->result->fetch_all();
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function fetchNextRow(): array|false
     {
         return $this->result->fetch_row() ?? false;
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function fetchNextRowColumn(int $i): false|float|int|null|string
     {
         return $this->result->fetch_column($i);
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function fetchAllRowsColumns(int $i): array
     {
         $columns = [];

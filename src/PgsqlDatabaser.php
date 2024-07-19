@@ -9,7 +9,21 @@ use SWF\Interface\DatabaserResultInterface;
 
 class PgsqlDatabaser extends AbstractDatabaser
 {
-    protected PgSqlConnection $connection;
+    protected string $beginCommand = 'START TRANSACTION';
+
+    protected string $beginWithIsolationCommand = 'START TRANSACTION %s';
+
+    protected string $commitCommand = 'COMMIT';
+
+    protected string $rollbackCommand = 'ROLLBACK';
+
+    protected ?string $createSavePointCommand = 'SAVEPOINT %s';
+
+    protected ?string $releaseSavePointCommand = 'RELEASE SAVEPOINT %s';
+
+    protected ?string $rollbackToSavePointCommand = 'ROLLBACK TO %s';
+
+    private PgSqlConnection $connection;
 
     /**
      * @param string|null $host Host or socket to connect.
@@ -23,39 +37,68 @@ class PgsqlDatabaser extends AbstractDatabaser
      * @param bool $camelize Convert result to camel case.
      */
     public function __construct(
-        protected ?string $host = 'localhost',
-        protected ?int $port = 5432,
-        protected ?string $db = null,
-        protected ?string $user = null,
-        protected ?string $pass = null,
-        protected bool $persistent = false,
-        protected string $charset = 'utf-8',
-        int $mode = Databaser::ASSOC,
-        bool $camelize = true,
+        private readonly ?string $host = null,
+        private readonly ?int $port = null,
+        private readonly ?string $db = null,
+        private readonly ?string $user = null,
+        private readonly ?string $pass = null,
+        private readonly bool $persistent = false,
+        private readonly string $charset = 'utf-8',
+        protected int $mode = Databaser::ASSOC,
+        protected bool $camelize = true,
     ) {
-        $this->mode = $mode;
-        $this->camelize = $camelize;
+        parent::__construct();
+    }
+
+    protected function assignResult(object|false $result): DatabaserResultInterface
+    {
+        if ($result instanceof PgSqlResult) {
+            return new PgsqlDatabaserResult($result, $this->mode, $this->camelize);
+        }
+
+        return new EmptyDatabaserResult();
+    }
+
+    protected function executeQueries(string $queries): object
+    {
+        $this->connection ??= $this->connect();
+
+        $result = @pg_query($this->connection, $queries);
+        if (false !== $result) {
+            return $result;
+        }
+
+        $lastError = pg_last_error($this->connection);
+        if (preg_match('/^ERROR:\s*([\dA-Z]{5}):\s*(.+)/u', $lastError, $M)) {
+            throw (new DatabaserException($M[2]))->setSqlState($M[1])->addSqlStateToMessage();
+        }
+
+        throw (new DatabaserException($lastError))->addSqlStateToMessage();
+    }
+
+    protected function escapeString(string $string): string
+    {
+        $this->connection ??= $this->connect();
+
+        return (string) pg_escape_literal($this->connection, $string);
     }
 
     /**
-     * @inheritDoc
+     * @throws DatabaserException
      */
-    protected function connect(): void
+    private function connect(): PgSqlConnection
     {
-        if (isset($this->connection)) {
-            return;
-        }
+        $connect = $this->persistent ? 'pg_pconnect' : 'pg_connect';
 
-        $connection = ($this->persistent ? 'pg_pconnect' : 'pg_connect')(
+        $connection = $connect(
             sprintf(
                 'host=%s port=%s dbname=%s user=%s password=%s',
-                $this->host ?? 'localhost',
-                $this->port ?? 5432,
+                $this->host ?? '',
+                $this->port ?? '',
                 $this->db ?? '',
                 $this->user ?? '',
                 $this->pass ?? '',
-            ),
-            PGSQL_CONNECT_FORCE_NEW,
+            ), PGSQL_CONNECT_FORCE_NEW,
         );
 
         if (false === $connection) {
@@ -68,64 +111,6 @@ class PgsqlDatabaser extends AbstractDatabaser
             throw (new DatabaserException(sprintf('Unable to set charset %s', $this->charset)))->addSqlStateToMessage();
         }
 
-        $this->connection = $connection;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    protected function makeBeginCommand(?string $isolation): string
-    {
-        if (null !== $isolation) {
-            return sprintf('START TRANSACTION %s', $isolation);
-        }
-
-        return 'START TRANSACTION';
-    }
-
-    /**
-     * @inheritDoc
-     */
-    protected function assignResult(object|false $result): DatabaserResultInterface
-    {
-        if ($result instanceof PgSqlResult) {
-            return new PgsqlDatabaserResult($result, $this->mode, $this->camelize);
-        }
-
-        return new EmptyDatabaserResult();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    protected function executeQueries(string $queries): object
-    {
-        if (!isset($this->connection)) {
-            $this->connect();
-        }
-
-        $result = @pg_query($this->connection, $queries);
-        if (false !== $result) {
-            return $result;
-        }
-
-        $lastError = pg_last_error($this->connection);
-        if (preg_match('/^ERROR:\s*([\dA-Z]{5}):\s*(.+)/u', $lastError, $M)) {
-            throw (new DatabaserException($M[2]))->setSqlState($M[1])->addSqlStateToMessage();
-        } else {
-            throw (new DatabaserException($lastError))->addSqlStateToMessage();
-        }
-    }
-
-    /**
-     * @inheritDoc
-     */
-    protected function escapeString(string $string): string
-    {
-        if (!isset($this->connection)) {
-            $this->connect();
-        }
-
-        return (string) pg_escape_literal($this->connection, $string);
+        return $connection;
     }
 }

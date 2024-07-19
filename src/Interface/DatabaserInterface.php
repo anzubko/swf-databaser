@@ -23,14 +23,7 @@ interface DatabaserInterface
      *
      * @throws DatabaserException
      */
-    public function rollback(): self;
-
-    /**
-     * Queues query.
-     *
-     * @throws DatabaserException
-     */
-    public function queue(string $query): self;
+    public function rollback(bool $full = false): self;
 
     /**
      * Executes query and returns result.
@@ -38,6 +31,13 @@ interface DatabaserInterface
      * @throws DatabaserException
      */
     public function query(string $query): DatabaserResultInterface;
+
+    /**
+     * Queues query.
+     *
+     * @throws DatabaserException
+     */
+    public function queue(string $query): self;
 
     /**
      * Executes all queued queries.
@@ -48,8 +48,6 @@ interface DatabaserInterface
 
     /**
      * Returns the ID of the last inserted row or sequence value.
-     *
-     * @throws DatabaserException
      */
     public function lastInsertId(): int;
 
