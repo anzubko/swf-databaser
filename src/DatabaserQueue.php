@@ -11,28 +11,35 @@ final class DatabaserQueue
     public const SAVEPOINT = 2;
 
     /**
-     * @var array<array{string, int}>
+     * @var string[]
      */
     private array $queries = [];
 
+    /**
+     * @var int[]
+     */
+    private array $types = [];
+
     public function add(string $query, int $type = self::REGULAR): void
     {
-        $this->queries[] = [$query, $type];
+        $this->queries[] = $query;
+        $this->types[] = $type;
     }
 
     public function getLastType(): ?int
     {
-        return count($this->queries) > 0 ? $this->queries[count($this->queries) - 1][1] : null;
+        return $this->types[count($this->types) - 1] ?? null;
     }
 
     public function pop(): void
     {
         array_pop($this->queries);
+        array_pop($this->types);
     }
 
     public function clear(): void
     {
-        $this->queries = [];
+        $this->queries = $this->types = [];
     }
 
     public function count(): int
@@ -45,9 +52,9 @@ final class DatabaserQueue
      */
     public function takeAwayQueries(): array
     {
-        $queries = array_column($this->queries, 0);
+        $queries = $this->queries;
 
-        $this->queries = [];
+        $this->queries = $this->types = [];
 
         return $queries;
     }
