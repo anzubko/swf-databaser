@@ -146,7 +146,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
         return $this;
     }
 
-    abstract protected function assignResult(object|false $result): DatabaserResultInterface;
+    abstract protected function assignResult(?object $result): DatabaserResultInterface;
 
     /**
      * @inheritDoc
@@ -192,15 +192,15 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @throws DatabaserException
      */
-    abstract protected function executeQueries(string $queries): object|false;
+    abstract protected function executeQueries(string $queries): ?object;
 
     /**
      * @throws DatabaserException
      */
-    protected function execute(): object|false
+    protected function execute(): ?object
     {
         if (0 === $this->queue->count()) {
-            return false;
+            return null;
         }
 
         $timer = gettimeofday(true);
@@ -208,7 +208,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
         $queries = $this->queue->takeAwayQueries();
 
         try {
-            $result = $this->executeQueries(implode('; ', $queries));
+            return $this->executeQueries(implode('; ', $queries));
         } finally {
             self::$timer += $timer = gettimeofday(true) - $timer;
 
@@ -218,8 +218,6 @@ abstract class AbstractDatabaser implements DatabaserInterface
                 ($this->profiler)($timer, $queries);
             }
         }
-
-        return $result;
     }
 
     /**

@@ -50,7 +50,7 @@ class PgsqlDatabaser extends AbstractDatabaser
         parent::__construct();
     }
 
-    protected function assignResult(object|false $result): DatabaserResultInterface
+    protected function assignResult(?object $result): DatabaserResultInterface
     {
         if ($result instanceof PgSqlResult) {
             return new PgsqlDatabaserResult($result, $this->mode, $this->camelize);

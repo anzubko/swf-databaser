@@ -51,7 +51,7 @@ class MysqlDatabaser extends AbstractDatabaser
         parent::__construct();
     }
 
-    protected function assignResult(object|false $result): DatabaserResultInterface
+    protected function assignResult(?object $result): DatabaserResultInterface
     {
         if ($result instanceof mysqli_result) {
             return new MysqlDatabaserResult($result, (int) $this->connection->affected_rows, $this->mode, $this->camelize);
@@ -65,7 +65,7 @@ class MysqlDatabaser extends AbstractDatabaser
         return isset($this->connection) ? (int) $this->connection->insert_id : 0;
     }
 
-    protected function executeQueries(string $queries): object|false
+    protected function executeQueries(string $queries): ?object
     {
         $this->connection ??= $this->connect();
 
@@ -79,7 +79,7 @@ class MysqlDatabaser extends AbstractDatabaser
             throw (new DatabaserException($e->getMessage()))->setSqlState($e->getSqlState())->addSqlStateToMessage();
         }
 
-        return $result;
+        return false === $result ? null : $result;
     }
 
     protected function escapeString(string $string): string
