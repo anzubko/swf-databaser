@@ -3,13 +3,14 @@
 namespace SWF;
 
 use Closure;
+use DateTimeInterface;
 use SWF\Exception\DatabaserException;
 use SWF\Interface\DatabaserInterface;
 use SWF\Interface\DatabaserResultInterface;
 use function count;
-use function is_array;
 use function is_bool;
-use function is_numeric;
+use function is_float;
+use function is_int;
 use function is_scalar;
 
 abstract class AbstractDatabaser implements DatabaserInterface
@@ -243,7 +244,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
                 return $this->commas($numbers, '');
         }
 
-        return '0';
+        throw new DatabaserException(sprintf('Unable convert to number value: %s', var_export($number, true)));
     }
 
     /**
@@ -264,7 +265,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
                 return $this->commas($booleans, '');
         }
 
-        return $boolean ? 'true' : 'false';
+        throw new DatabaserException(sprintf('Unable convert to boolean value: %s', var_export($boolean, true)));
     }
 
     /**
@@ -275,9 +276,11 @@ abstract class AbstractDatabaser implements DatabaserInterface
         switch (true) {
             case null === $string:
                 return $null;
+            case $string instanceof DateTimeInterface:
+                return $this->escapeString($string->format('Y-m-d H:i:s.u'));
             case is_scalar($string):
                 return $this->escapeString((string) $string);
-            case is_array($string):
+            case is_iterable($string):
                 $strings = [];
                 foreach ($string as $value) {
                     $strings[] = $this->string($value, $null);
@@ -285,7 +288,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
                 return $this->commas($strings, '');
         }
 
-        return '';
+        throw new DatabaserException(sprintf('Unable convert to string value: %s', var_export($string, true)));
     }
 
     /**
@@ -296,7 +299,10 @@ abstract class AbstractDatabaser implements DatabaserInterface
         switch (true) {
             case null === $scalar:
                 return $null;
-            case is_numeric($scalar):
+            case $scalar instanceof DateTimeInterface:
+                return $this->escapeString($scalar->format('Y-m-d H:i:s.u'));
+            case is_int($scalar):
+            case is_float($scalar):
                 return (string) $scalar;
             case is_bool($scalar):
                 return $scalar ? 'true' : 'false';
@@ -310,7 +316,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
                 return $this->commas($scalars, '');
         }
 
-        return '';
+        throw new DatabaserException(sprintf('Unable convert to scalar value: %s', var_export($scalar, true)));
     }
 
     /**

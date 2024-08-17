@@ -53,11 +53,15 @@ interface DatabaserInterface
 
     /**
      * Formats numbers for queries.
+     *
+     * @throws DatabaserException
      */
     public function number(mixed $number, string $null = 'null'): string;
 
     /**
      * Formats booleans for queries.
+     *
+     * @throws DatabaserException
      */
     public function boolean(mixed $boolean, string $null = 'null'): string;
 
