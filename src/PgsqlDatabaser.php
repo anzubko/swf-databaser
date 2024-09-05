@@ -4,6 +4,7 @@ namespace SWF;
 
 use PgSql\Connection as PgSqlConnection;
 use PgSql\Result as PgSqlResult;
+use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Exception\DatabaserException;
 use SWF\Interface\DatabaserResultInterface;
 
@@ -33,7 +34,7 @@ class PgsqlDatabaser extends AbstractDatabaser
      * @param string|null $pass Password.
      * @param bool $persistent Makes connection persistent.
      * @param string $charset Default charset.
-     * @param int $mode Mode for fetchAll() method.
+     * @param DatabaserResultModeEnum $mode Mode for fetchAll() method.
      * @param bool $camelize Convert result to camel case.
      */
     public function __construct(
@@ -44,7 +45,7 @@ class PgsqlDatabaser extends AbstractDatabaser
         private readonly ?string $pass = null,
         private readonly bool $persistent = false,
         private readonly string $charset = 'utf-8',
-        protected int $mode = Databaser::ASSOC,
+        protected DatabaserResultModeEnum $mode = DatabaserResultModeEnum::ASSOC,
         protected bool $camelize = true,
     ) {
         parent::__construct();
@@ -70,10 +71,10 @@ class PgsqlDatabaser extends AbstractDatabaser
 
         $lastError = pg_last_error($this->connection);
         if (preg_match('/^ERROR:\s*([\dA-Z]{5}):\s*(.+)/u', $lastError, $M)) {
-            throw (new DatabaserException($M[2]))->setSqlState($M[1])->addSqlStateToMessage();
+            throw (new DatabaserException($M[2]))->setSqlState($M[1])->sqlStateToMessage();
         }
 
-        throw (new DatabaserException($lastError))->addSqlStateToMessage();
+        throw (new DatabaserException($lastError))->sqlStateToMessage();
     }
 
     protected function escapeString(string $string): string
@@ -88,27 +89,37 @@ class PgsqlDatabaser extends AbstractDatabaser
      */
     private function connect(): PgSqlConnection
     {
-        $connect = $this->persistent ? 'pg_pconnect' : 'pg_connect';
+        $params = [];
+        if (null !== $this->host) {
+            $params[] = sprintf('host=%s', $this->host);
+        }
+        if (null !== $this->port) {
+            $params[] = sprintf('port=%d', $this->port);
+        }
+        if (null !== $this->db) {
+            $params[] = sprintf('dbname=%s', $this->db);
+        }
+        if (null !== $this->user) {
+            $params[] = sprintf('user=%s', $this->user);
+        }
+        if (null !== $this->pass) {
+            $params[] = sprintf('password=%s', $this->pass);
+        }
 
-        $connection = $connect(
-            sprintf(
-                'host=%s port=%s dbname=%s user=%s password=%s',
-                $this->host ?? '',
-                $this->port ?? '',
-                $this->db ?? '',
-                $this->user ?? '',
-                $this->pass ?? '',
-            ), PGSQL_CONNECT_FORCE_NEW,
-        );
+        if ($this->persistent) {
+            $connection = pg_pconnect(implode(' ', $params), PGSQL_CONNECT_FORCE_NEW);
+        } else {
+            $connection = pg_connect(implode(' ', $params), PGSQL_CONNECT_FORCE_NEW);
+        }
 
         if (false === $connection) {
-            throw (new DatabaserException('Error in the process of establishing a connection'))->addSqlStateToMessage();
+            throw (new DatabaserException('Error in the process of establishing a connection'))->sqlStateToMessage();
         }
 
         pg_set_error_verbosity($connection, PGSQL_ERRORS_VERBOSE);
 
         if (-1 === pg_set_client_encoding($connection, $this->charset)) {
-            throw (new DatabaserException(sprintf('Unable to set charset %s', $this->charset)))->addSqlStateToMessage();
+            throw (new DatabaserException(sprintf('Unable to set charset %s', $this->charset)))->sqlStateToMessage();
         }
 
         return $connection;

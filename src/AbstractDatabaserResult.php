@@ -2,11 +2,14 @@
 
 namespace SWF;
 
+use SWF\Enum\DatabaserResultModeEnum;
+use SWF\Enum\DatabaserResultTypeEnum;
 use SWF\Interface\DatabaserResultInterface;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\Serializer\NameConverter\CamelCaseToSnakeCaseNameConverter;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
+use Symfony\Component\Serializer\Normalizer\BackedEnumNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
@@ -16,22 +19,17 @@ use function is_string;
 
 abstract class AbstractDatabaserResult implements DatabaserResultInterface
 {
-    protected const INT = 1;
-    protected const FLOAT = 2;
-    protected const BOOL = 3;
-    protected const JSON = 4;
-
     /**
      * @var string[]
      */
     protected array $colNames = [];
 
     /**
-     * @var int[]
+     * @var DatabaserResultTypeEnum[]
      */
     protected array $colTypes = [];
 
-    protected ?int $mode = null;
+    protected ?DatabaserResultModeEnum $mode = null;
 
     protected bool $camelize = false;
 
@@ -54,23 +52,23 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function fetchAll(?string $className = null): array
     {
         if (null === $className) {
-            $mode = $this->mode ?? Databaser::ASSOC;
+            $mode = $this->mode ?? DatabaserResultModeEnum::ASSOC;
             $serializer = null;
         } else {
-            $mode = Databaser::OBJECT;
+            $mode = DatabaserResultModeEnum::OBJECT;
             $serializer = $this->getSerializer();
         }
 
         $rows = [];
         foreach ($this->fetchAllRows() as $row) {
             switch ($mode) {
-                case Databaser::ASSOC:
+                case DatabaserResultModeEnum::ASSOC:
                     $row = array_combine($this->colNames, $this->typifyRow($row));
                     if ($this->camelize) {
                         $row = $this->camelizeRow($row);
                     }
                     break;
-                case Databaser::OBJECT:
+                case DatabaserResultModeEnum::OBJECT:
                     $row = array_combine($this->colNames, $this->typifyRow($row, null !== $className));
                     if ($this->camelize) {
                         $row = $this->camelizeRow($row);
@@ -315,7 +313,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     /**
      * @inheritDoc
      */
-    public function setMode(?int $mode): self
+    public function setMode(?DatabaserResultModeEnum $mode): self
     {
         $this->mode = $mode;
 
@@ -370,23 +368,23 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
             }
 
             $row[$i] = match ($type) {
-                self::INT => (int) $row[$i],
-                self::FLOAT => (float) $row[$i],
-                self::JSON => json_decode((string) $row[$i], $assoc),
-                default => $row[$i],
+                DatabaserResultTypeEnum::INT => (int) $row[$i],
+                DatabaserResultTypeEnum::FLOAT => (float) $row[$i],
+                DatabaserResultTypeEnum::BOOL => ('t' === $row[$i]),
+                DatabaserResultTypeEnum::JSON => json_decode((string) $row[$i], $assoc),
             };
         }
 
         return $row;
     }
 
-    protected function typify(mixed $value, int $type): mixed
+    protected function typify(mixed $value, DatabaserResultTypeEnum $type): mixed
     {
         return match ($type) {
-            self::INT => (int) $value,
-            self::FLOAT => (float) $value,
-            self::JSON => json_decode((string) $value, true),
-            default => $value,
+            DatabaserResultTypeEnum::INT => (int) $value,
+            DatabaserResultTypeEnum::FLOAT => (float) $value,
+            DatabaserResultTypeEnum::BOOL => ('t' === $value),
+            DatabaserResultTypeEnum::JSON => json_decode((string) $value, true),
         };
     }
 
@@ -395,6 +393,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         return self::$serializers[$this->camelize] ??= new Serializer([
             new DateTimeNormalizer(),
             new ArrayDenormalizer(),
+            new BackedEnumNormalizer(),
             new ObjectNormalizer(
                 nameConverter: $this->camelize ? null : new CamelCaseToSnakeCaseNameConverter(),
                 propertyTypeExtractor: new PropertyInfoExtractor(

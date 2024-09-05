@@ -2,6 +2,7 @@
 
 namespace SWF\Interface;
 
+use SWF\Enum\DatabaserResultModeEnum;
 use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Exception\PartialDenormalizationException;
 
@@ -100,7 +101,7 @@ interface DatabaserResultInterface
     /**
      * Sets mode for fetchAll() method.
      */
-    public function setMode(?int $mode): self;
+    public function setMode(?DatabaserResultModeEnum $mode): self;
 
     /**
      * Convert result to camel case.

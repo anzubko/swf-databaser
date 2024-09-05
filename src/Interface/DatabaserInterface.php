@@ -2,6 +2,7 @@
 
 namespace SWF\Interface;
 
+use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Exception\DatabaserException;
 
 interface DatabaserInterface
@@ -144,7 +145,7 @@ interface DatabaserInterface
     /**
      * Sets mode for fetchAll() method.
      */
-    public function setMode(int $mode): self;
+    public function setMode(DatabaserResultModeEnum $mode): self;
 
     /**
      * Convert result to camel case.

@@ -3,18 +3,17 @@
 namespace SWF;
 
 use mysqli_result;
+use SWF\Enum\DatabaserResultModeEnum;
+use SWF\Enum\DatabaserResultTypeEnum;
 
 class MysqlDatabaserResult extends AbstractDatabaserResult
 {
     public function __construct(
         private readonly mysqli_result $result,
         private readonly int $affectedRows,
-        ?int $mode,
-        bool $camelize,
+        protected ?DatabaserResultModeEnum $mode,
+        protected bool $camelize,
     ) {
-        $this->mode = $mode;
-        $this->camelize = $camelize;
-
         if (0 === $this->result->field_count) {
             return;
         }
@@ -31,14 +30,14 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
                 case MYSQLI_TYPE_INT24:
                 case MYSQLI_TYPE_YEAR:
                 case MYSQLI_TYPE_ENUM:
-                    $this->colTypes[$i] = self::INT;
+                    $this->colTypes[$i] = DatabaserResultTypeEnum::INT;
                     break;
                 case MYSQLI_TYPE_FLOAT:
                 case MYSQLI_TYPE_DOUBLE:
-                    $this->colTypes[$i] = self::FLOAT;
+                    $this->colTypes[$i] = DatabaserResultTypeEnum::FLOAT;
                     break;
                 case MYSQLI_TYPE_JSON:
-                    $this->colTypes[$i] = self::JSON;
+                    $this->colTypes[$i] = DatabaserResultTypeEnum::JSON;
             }
         }
     }

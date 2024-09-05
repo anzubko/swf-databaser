@@ -4,6 +4,8 @@ namespace SWF;
 
 use Closure;
 use DateTimeInterface;
+use SWF\Enum\DatabaserQueueTypeEnum;
+use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Exception\DatabaserException;
 use SWF\Interface\DatabaserInterface;
 use SWF\Interface\DatabaserResultInterface;
@@ -29,7 +31,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     protected ?string $rollbackToSavePointCommand = null;
 
-    protected int $mode = Databaser::ASSOC;
+    protected DatabaserResultModeEnum $mode = DatabaserResultModeEnum::ASSOC;
 
     protected bool $camelize = true;
 
@@ -58,12 +60,12 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
         if (1 === $this->depth->get()) {
             if (null === $isolation) {
-                $this->queue->add($this->beginCommand, DatabaserQueue::BEGIN);
+                $this->queue->add($this->beginCommand, DatabaserQueueTypeEnum::BEGIN);
             } else {
-                $this->queue->add(sprintf($this->beginWithIsolationCommand, $isolation), DatabaserQueue::BEGIN);
+                $this->queue->add(sprintf($this->beginWithIsolationCommand, $isolation), DatabaserQueueTypeEnum::BEGIN);
             }
         } elseif (null !== $this->createSavePointCommand) {
-            $this->queue->add(sprintf($this->createSavePointCommand, $this->getSavePointName()), DatabaserQueue::SAVEPOINT);
+            $this->queue->add(sprintf($this->createSavePointCommand, $this->getSavePointName()), DatabaserQueueTypeEnum::SAVEPOINT);
         }
 
         return $this;
@@ -75,13 +77,13 @@ abstract class AbstractDatabaser implements DatabaserInterface
     public function commit(): self
     {
         if (null !== $this->createSavePointCommand) {
-            while (DatabaserQueue::SAVEPOINT === $this->queue->getLastType()) {
+            while (DatabaserQueueTypeEnum::SAVEPOINT === $this->queue->getLastType()) {
                 $this->queue->pop();
                 $this->depth->dec();
             }
         }
 
-        if (DatabaserQueue::BEGIN === $this->queue->getLastType()) {
+        if (DatabaserQueueTypeEnum::BEGIN === $this->queue->getLastType()) {
             $this->queue->pop();
             $this->depth->dec();
             $this->execute();
@@ -121,13 +123,13 @@ abstract class AbstractDatabaser implements DatabaserInterface
         }
 
         if (null !== $this->createSavePointCommand) {
-            while (DatabaserQueue::SAVEPOINT === $this->queue->getLastType()) {
+            while (DatabaserQueueTypeEnum::SAVEPOINT === $this->queue->getLastType()) {
                 $this->queue->pop();
                 $this->depth->dec();
             }
         }
 
-        if (DatabaserQueue::BEGIN === $this->queue->getLastType()) {
+        if (DatabaserQueueTypeEnum::BEGIN === $this->queue->getLastType()) {
             $this->queue->pop();
             $this->depth->dec();
             $this->execute();
@@ -404,7 +406,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function setMode(int $mode): self
+    public function setMode(DatabaserResultModeEnum $mode): self
     {
         $this->mode = $mode;
 

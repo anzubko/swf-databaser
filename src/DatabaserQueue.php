@@ -2,31 +2,28 @@
 
 namespace SWF;
 
+use SWF\Enum\DatabaserQueueTypeEnum;
 use function count;
 
 final class DatabaserQueue
 {
-    public const REGULAR = 0;
-    public const BEGIN = 1;
-    public const SAVEPOINT = 2;
-
     /**
      * @var string[]
      */
     private array $queries = [];
 
     /**
-     * @var int[]
+     * @var DatabaserQueueTypeEnum[]
      */
     private array $types = [];
 
-    public function add(string $query, int $type = self::REGULAR): void
+    public function add(string $query, DatabaserQueueTypeEnum $type = DatabaserQueueTypeEnum::REGULAR): void
     {
         $this->queries[] = $query;
         $this->types[] = $type;
     }
 
-    public function getLastType(): ?int
+    public function getLastType(): ?DatabaserQueueTypeEnum
     {
         return $this->types[count($this->types) - 1] ?? null;
     }

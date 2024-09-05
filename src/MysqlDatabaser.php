@@ -5,6 +5,7 @@ namespace SWF;
 use mysqli;
 use mysqli_result;
 use mysqli_sql_exception;
+use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Exception\DatabaserException;
 use SWF\Interface\DatabaserResultInterface;
 
@@ -34,7 +35,7 @@ class MysqlDatabaser extends AbstractDatabaser
      * @param string|null $pass Password.
      * @param bool $persistent Makes connection persistent.
      * @param string $charset Default charset.
-     * @param int $mode Mode for fetchAll() method.
+     * @param DatabaserResultModeEnum $mode Mode for fetchAll() method.
      * @param bool $camelize Convert result to camel case.
      */
     public function __construct(
@@ -45,7 +46,7 @@ class MysqlDatabaser extends AbstractDatabaser
         private readonly ?string $pass = null,
         private readonly bool $persistent = false,
         private readonly string $charset = 'utf8mb4',
-        protected int $mode = Databaser::ASSOC,
+        protected DatabaserResultModeEnum $mode = DatabaserResultModeEnum::ASSOC,
         protected bool $camelize = true,
     ) {
         parent::__construct();
@@ -76,7 +77,7 @@ class MysqlDatabaser extends AbstractDatabaser
                 $result = $this->connection->store_result();
             } while ($this->connection->next_result());
         } catch (mysqli_sql_exception $e) {
-            throw (new DatabaserException($e->getMessage()))->setSqlState($e->getSqlState())->addSqlStateToMessage();
+            throw (new DatabaserException($e->getMessage()))->setSqlState($e->getSqlState())->sqlStateToMessage();
         }
 
         return false === $result ? null : $result;
@@ -109,18 +110,11 @@ class MysqlDatabaser extends AbstractDatabaser
         }
 
         try {
-            $connection = new mysqli(
-                hostname: $host,
-                username: $this->user,
-                password: $this->pass,
-                database: $this->db,
-                port: $this->port,
-                socket: $socket,
-            );
+            $connection = new mysqli($host, $this->user, $this->pass, $this->db, $this->port, $socket);
 
             $connection->set_charset($this->charset);
         } catch (mysqli_sql_exception $e) {
-            throw (new DatabaserException($e->getMessage()))->setSqlState($e->getSqlState())->addSqlStateToMessage();
+            throw (new DatabaserException($e->getMessage()))->setSqlState($e->getSqlState())->sqlStateToMessage();
         }
 
         return $connection;
