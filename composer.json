@@ -1,6 +1,6 @@
 {
     "name": "anzubko/swf-databaser",
-    "description": "SWF databaser",
+    "description": "Simplest framework database provider",
     "type": "library",
     "license": "GPL-3.0-or-later",
     "autoload": {
@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "php": "^8.2",
+        "php": ">=8.2",
         "phpdocumentor/reflection-docblock": "^5.3",
         "symfony/property-access": "^7.0",
         "symfony/serializer": "^7.0"

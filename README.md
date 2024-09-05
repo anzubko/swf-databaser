@@ -1,4 +1,4 @@
-# SWF Databaser
+# Simplest framework database provider
 
 For reference only, because the module is under development.
 
