@@ -16,7 +16,7 @@ interface DatabaserResultInterface
      * @throws NotNormalizableValueException
      * @throws PartialDenormalizationException
      */
-    public function fetchAll(?string $className = null): array;
+    public function fetchAll(?string $class = null): array;
 
     /**
      * Iterates next result row as numeric array.
@@ -54,7 +54,7 @@ interface DatabaserResultInterface
      * @throws NotNormalizableValueException
      * @throws PartialDenormalizationException
      */
-    public function iterateObject(?string $className = null): iterable;
+    public function iterateObject(?string $class = null): iterable;
 
     /**
      * Fetches next result row as object.
@@ -62,7 +62,7 @@ interface DatabaserResultInterface
      * @throws NotNormalizableValueException
      * @throws PartialDenormalizationException
      */
-    public function fetchObject(?string $className = null): object|false;
+    public function fetchObject(?string $class = null): object|false;
 
     /**
      * Iterates next result row column.

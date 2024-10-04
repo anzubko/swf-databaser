@@ -49,9 +49,9 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     /**
      * @inheritDoc
      */
-    public function fetchAll(?string $className = null): array
+    public function fetchAll(?string $class = null): array
     {
-        if (null === $className) {
+        if (null === $class) {
             $mode = $this->mode ?? DatabaserResultModeEnum::ASSOC;
             $serializer = null;
         } else {
@@ -69,14 +69,14 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
                     }
                     break;
                 case DatabaserResultModeEnum::OBJECT:
-                    $row = array_combine($this->colNames, $this->typifyRow($row, null !== $className));
+                    $row = array_combine($this->colNames, $this->typifyRow($row, null !== $class));
                     if ($this->camelize) {
                         $row = $this->camelizeRow($row);
                     }
-                    if (null === $className) {
+                    if (null === $class) {
                         $row = (object) $row;
                     } else {
-                        $row = $serializer->denormalize($row, $className);
+                        $row = $serializer->denormalize($row, $class);
                     }
                     break;
                 default:
@@ -169,18 +169,18 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     /**
      * @inheritDoc
      */
-    public function iterateObject(?string $className = null): iterable
+    public function iterateObject(?string $class = null): iterable
     {
         while (false !== ($row = $this->fetchNextRow())) {
-            $row = array_combine($this->colNames, $this->typifyRow($row, null !== $className));
+            $row = array_combine($this->colNames, $this->typifyRow($row, null !== $class));
             if ($this->camelize) {
                 $row = $this->camelizeRow($row);
             }
 
-            if (null === $className) {
+            if (null === $class) {
                 $row = (object) $row;
             } else {
-                $row = $this->getSerializer()->denormalize($row, $className);
+                $row = $this->getSerializer()->denormalize($row, $class);
                 if (!is_object($row)) {
                     break;
                 }
@@ -193,23 +193,23 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     /**
      * @inheritDoc
      */
-    public function fetchObject(?string $className = null): object|false
+    public function fetchObject(?string $class = null): object|false
     {
         $row = $this->fetchNextRow();
         if (false === $row) {
             return false;
         }
 
-        $row = array_combine($this->colNames, $this->typifyRow($row, null !== $className));
+        $row = array_combine($this->colNames, $this->typifyRow($row, null !== $class));
         if ($this->camelize) {
             $row = $this->camelizeRow($row);
         }
 
-        if (null === $className) {
+        if (null === $class) {
             return (object) $row;
         }
 
-        $row = $this->getSerializer()->denormalize($row, $className);
+        $row = $this->getSerializer()->denormalize($row, $class);
 
         return is_object($row) ? $row : false;
     }
