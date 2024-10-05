@@ -35,11 +35,13 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     protected bool $camelize = true;
 
+    protected ?Closure $denormalizer = null;
+
+    private ?Closure $profiler = null;
+
     private DatabaserQueue $queue;
 
     private DatabaserDepth $depth;
-
-    private Closure $profiler;
 
     private static float $timer = 0.0;
 
@@ -54,7 +56,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function begin(?string $isolation = null): self
+    public function begin(?string $isolation = null): static
     {
         $this->depth->inc();
 
@@ -74,7 +76,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function commit(): self
+    public function commit(): static
     {
         if (null !== $this->createSavePointCommand) {
             while (DatabaserQueueTypeEnum::SAVEPOINT === $this->queue->getLastType()) {
@@ -108,7 +110,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function rollback(bool $full = false): self
+    public function rollback(bool $full = false): static
     {
         if ($full) {
             if ($this->depth->get() > 0) {
@@ -164,7 +166,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function queue(string $query): self
+    public function queue(string $query): static
     {
         $this->queue->add($query);
         if ($this->queue->count() > 64) {
@@ -177,7 +179,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function flush(): self
+    public function flush(): static
     {
         $this->execute();
 
@@ -217,7 +219,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
             self::$counter++;
 
-            if (isset($this->profiler)) {
+            if (null !== $this->profiler) {
                 ($this->profiler)($timer, $queries);
             }
         }
@@ -396,9 +398,9 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function setProfiler(callable $profiler): self
+    public function setProfiler(Closure $profiler): static
     {
-        $this->profiler = $profiler(...);
+        $this->profiler = $profiler;
 
         return $this;
     }
@@ -406,7 +408,17 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function setMode(DatabaserResultModeEnum $mode): self
+    public function setDenormalizer(Closure $denormalizer): static
+    {
+        $this->denormalizer = $denormalizer;
+
+        return $this;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function setMode(DatabaserResultModeEnum $mode): static
     {
         $this->mode = $mode;
 
@@ -416,7 +428,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function setCamelize(bool $camelize): self
+    public function setCamelize(bool $camelize): static
     {
         $this->camelize = $camelize;
 

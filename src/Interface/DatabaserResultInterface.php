@@ -3,18 +3,17 @@
 namespace SWF\Interface;
 
 use SWF\Enum\DatabaserResultModeEnum;
-use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
-use Symfony\Component\Serializer\Exception\PartialDenormalizationException;
 
 interface DatabaserResultInterface
 {
     /**
      * Fetches all result rows as associative array, numeric array, or object.
      *
-     * @return mixed[]
+     * @template T of object
      *
-     * @throws NotNormalizableValueException
-     * @throws PartialDenormalizationException
+     * @param class-string<T>|null $class
+     *
+     * @return array<T|mixed>
      */
     public function fetchAll(?string $class = null): array;
 
@@ -49,20 +48,24 @@ interface DatabaserResultInterface
     /**
      * Iterates next result row as object.
      *
-     * @return iterable<object>
+     * @template T of object
      *
-     * @throws NotNormalizableValueException
-     * @throws PartialDenormalizationException
+     * @param class-string<T>|null $class
+     *
+     * @return iterable<T>
      */
     public function iterateObject(?string $class = null): iterable;
 
     /**
      * Fetches next result row as object.
      *
-     * @throws NotNormalizableValueException
-     * @throws PartialDenormalizationException
+     * @template T of object
+     *
+     * @param class-string<T>|null $class
+     *
+     * @return T|false
      */
-    public function fetchObject(?string $class = null): object|false;
+    public function fetchObject(?string $class = null);
 
     /**
      * Iterates next result row column.

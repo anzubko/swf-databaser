@@ -2,6 +2,7 @@
 
 namespace SWF;
 
+use Closure;
 use PgSql\Result as PgSqlResult;
 use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Enum\DatabaserResultTypeEnum;
@@ -10,6 +11,7 @@ class PgsqlDatabaserResult extends AbstractDatabaserResult
 {
     public function __construct(
         private readonly PgSqlResult $result,
+        protected ?Closure $denormalizer,
         protected ?DatabaserResultModeEnum $mode,
         protected bool $camelize,
     ) {
@@ -61,7 +63,7 @@ class PgsqlDatabaserResult extends AbstractDatabaserResult
     /**
      * @inheritDoc
      */
-    public function seek(int $i = 0): self
+    public function seek(int $i = 0): static
     {
         pg_result_seek($this->result, $i);
 

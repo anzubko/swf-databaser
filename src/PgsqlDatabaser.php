@@ -54,7 +54,7 @@ class PgsqlDatabaser extends AbstractDatabaser
     protected function assignResult(?object $result): DatabaserResultInterface
     {
         if ($result instanceof PgSqlResult) {
-            return new PgsqlDatabaserResult($result, $this->mode, $this->camelize);
+            return new PgsqlDatabaserResult($result, $this->denormalizer, $this->mode, $this->camelize);
         }
 
         return new EmptyDatabaserResult();

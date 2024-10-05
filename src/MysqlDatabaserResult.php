@@ -2,6 +2,7 @@
 
 namespace SWF;
 
+use Closure;
 use mysqli_result;
 use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Enum\DatabaserResultTypeEnum;
@@ -11,6 +12,7 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
     public function __construct(
         private readonly mysqli_result $result,
         private readonly int $affectedRows,
+        protected ?Closure $denormalizer,
         protected ?DatabaserResultModeEnum $mode,
         protected bool $camelize,
     ) {
@@ -70,7 +72,7 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
     /**
      * @inheritDoc
      */
-    public function seek(int $i = 0): self
+    public function seek(int $i = 0): static
     {
         $this->result->data_seek($i);
 

@@ -2,6 +2,7 @@
 
 namespace SWF\Interface;
 
+use Closure;
 use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Exception\DatabaserException;
 
@@ -140,7 +141,12 @@ interface DatabaserInterface
     /**
      * Sets external profiler for queries.
      */
-    public function setProfiler(callable $profiler): self;
+    public function setProfiler(Closure $profiler): self;
+
+    /**
+     * Sets external denormalizer for arrays to objects conversion.
+     */
+    public function setDenormalizer(Closure $denormalizer): self;
 
     /**
      * Sets mode for fetchAll() method.
