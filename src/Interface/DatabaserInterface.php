@@ -144,7 +144,7 @@ interface DatabaserInterface
     public function setProfiler(Closure $profiler): static;
 
     /**
-     * Sets external denormalizer for arrays to objects conversion.
+     * Sets external denormalizer for array to object conversions.
      */
     public function setDenormalizer(Closure $denormalizer): static;
 

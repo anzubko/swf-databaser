@@ -170,7 +170,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
                 $row = $this->camelizeRow($row);
             }
 
-            yield null !== $class ? ($this->denormalizer)($row, $class) : (object) $row;
+            yield null === $class ? (object) $row : ($this->denormalizer)($row, $class);
         }
     }
 
