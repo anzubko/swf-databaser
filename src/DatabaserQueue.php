@@ -5,6 +5,9 @@ namespace SWF;
 use SWF\Enum\DatabaserQueueTypeEnum;
 use function count;
 
+/**
+ * @internal
+ */
 final class DatabaserQueue
 {
     /**

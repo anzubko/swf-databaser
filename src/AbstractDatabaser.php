@@ -31,11 +31,11 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     protected ?string $rollbackToSavePointCommand = null;
 
+    protected ?Closure $denormalizer = null;
+
     protected DatabaserResultModeEnum $mode = DatabaserResultModeEnum::ASSOC;
 
     protected bool $camelize = true;
-
-    protected ?Closure $denormalizer = null;
 
     private ?Closure $profiler = null;
 

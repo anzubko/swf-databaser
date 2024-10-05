@@ -2,6 +2,9 @@
 
 namespace SWF\Enum;
 
+/**
+ * @internal
+ */
 enum DatabaserResultTypeEnum
 {
     case INT;

@@ -5,6 +5,7 @@ namespace SWF;
 use Closure;
 use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Enum\DatabaserResultTypeEnum;
+use SWF\Exception\DatabaserException;
 use SWF\Interface\DatabaserResultInterface;
 use function is_array;
 use function is_object;
@@ -41,7 +42,13 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
      */
     public function fetchAll(?string $class = null): array
     {
-        $mode = null === $class ? ($this->mode ?? DatabaserResultModeEnum::ASSOC) : DatabaserResultModeEnum::OBJECT;
+        if (null === $class) {
+            $mode = $this->mode ?? DatabaserResultModeEnum::ASSOC;
+        } elseif (null === $this->denormalizer) {
+            throw new DatabaserException('For use denormalization you must set denormalizer before');
+        } else {
+            $mode = DatabaserResultModeEnum::OBJECT;
+        }
 
         $rows = [];
         foreach ($this->fetchAllRows() as $row) {
@@ -57,7 +64,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
                     if ($this->camelize) {
                         $row = $this->camelizeRow($row);
                     }
-                    $row = isset($class, $this->denormalizer) ? ($this->denormalizer)($row, $class) : (object) $row;
+                    $row = null === $class ? (object) $row : ($this->denormalizer)($row, $class);
                     break;
                 default:
                     $row = $this->typifyRow($row);
@@ -151,13 +158,19 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
      */
     public function iterateObject(?string $class = null): iterable
     {
+        if (null !== $class) {
+            if (null === $this->denormalizer) {
+                throw new DatabaserException('For use denormalization you must set denormalizer before');
+            }
+        }
+
         while (false !== ($row = $this->fetchNextRow())) {
             $row = array_combine($this->colNames, $this->typifyRow($row, null !== $class));
             if ($this->camelize) {
                 $row = $this->camelizeRow($row);
             }
 
-            yield isset($class, $this->denormalizer) ? ($this->denormalizer)($row, $class) : (object) $row;
+            yield null !== $class ? ($this->denormalizer)($row, $class) : (object) $row;
         }
     }
 
@@ -166,6 +179,12 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
      */
     public function fetchObject(?string $class = null)
     {
+        if (null !== $class) {
+            if (null === $this->denormalizer) {
+                throw new DatabaserException('For use denormalization you must set denormalizer before');
+            }
+        }
+
         $row = $this->fetchNextRow();
         if (false === $row) {
             return false;
@@ -176,7 +195,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
             $row = $this->camelizeRow($row);
         }
 
-        return isset($class, $this->denormalizer) ? ($this->denormalizer)($row, $class) : (object) $row;
+        return null === $class ? (object) $row : ($this->denormalizer)($row, $class);
     }
 
     protected function fetchNextRowColumn(int $i): false|float|int|null|string
@@ -210,7 +229,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         if (false === $column) {
             return false;
         }
-
         if (isset($column, $this->colTypes[$i])) {
             $column = $this->typify($column, $this->colTypes[$i]);
             if (is_array($column)) {
@@ -240,7 +258,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
                 if (null === $column) {
                     continue;
                 }
-
                 $columns[$j] = $this->typify($column, $this->colTypes[$i]);
                 if (is_array($columns[$j])) {
                     $columns[$j] = $this->camelizeRow($columns[$j]);
@@ -307,7 +324,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
             if (is_string($key)) {
                 $key = lcfirst(strtr(ucwords($key, '_'), ['_' => '']));
             }
-
             if (is_array($value)) {
                 $result[$key] = $this->camelizeRow($value);
             } elseif (is_object($value)) {

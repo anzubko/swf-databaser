@@ -3,17 +3,20 @@
 namespace SWF\Interface;
 
 use SWF\Enum\DatabaserResultModeEnum;
+use SWF\Exception\DatabaserException;
 
 interface DatabaserResultInterface
 {
     /**
-     * Fetches all result rows as associative array, numeric array, or object.
+     * Fetches all result rows as associative array, numeric array or object.
      *
      * @template T of object
      *
      * @param class-string<T>|null $class
      *
-     * @return array<T|mixed>
+     * @return array<T|object|mixed>
+     *
+     * @throws DatabaserException
      */
     public function fetchAll(?string $class = null): array;
 
@@ -52,7 +55,9 @@ interface DatabaserResultInterface
      *
      * @param class-string<T>|null $class
      *
-     * @return iterable<T>
+     * @return iterable<T|object>
+     *
+     * @throws DatabaserException
      */
     public function iterateObject(?string $class = null): iterable;
 
@@ -63,7 +68,9 @@ interface DatabaserResultInterface
      *
      * @param class-string<T>|null $class
      *
-     * @return T|false
+     * @return T|object|false
+     *
+     * @throws DatabaserException
      */
     public function fetchObject(?string $class = null);
 

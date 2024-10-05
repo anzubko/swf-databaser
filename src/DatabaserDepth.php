@@ -4,6 +4,9 @@ namespace SWF;
 
 use SWF\Exception\DatabaserException;
 
+/**
+ * @internal
+ */
 final class DatabaserDepth
 {
     private int $depth = 0;
