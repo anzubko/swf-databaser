@@ -14,7 +14,7 @@ class DatabaserException extends Exception
     /**
      * Adds sqlstate to message.
      */
-    public function sqlStateToMessage(): self
+    public function sqlStateToMessage(): static
     {
         $this->message = sprintf('[%s] %s', $this->sqlState, $this->message);
 
@@ -24,7 +24,7 @@ class DatabaserException extends Exception
     /**
      * Sets sqlstate.
      */
-    public function setSqlState(string $sqlState): self
+    public function setSqlState(string $sqlState): static
     {
         $this->sqlState = $sqlState;
 

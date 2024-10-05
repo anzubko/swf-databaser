@@ -11,21 +11,21 @@ interface DatabaserInterface
     /**
      * Begins transaction.
      */
-    public function begin(?string $isolation = null): self;
+    public function begin(?string $isolation = null): static;
 
     /**
      * Commits transaction. If nothing was after begin, then ignores begin.
      *
      * @throws DatabaserException
      */
-    public function commit(): self;
+    public function commit(): static;
 
     /**
      * Rollbacks transaction.
      *
      * @throws DatabaserException
      */
-    public function rollback(bool $full = false): self;
+    public function rollback(bool $full = false): static;
 
     /**
      * Executes query and returns result.
@@ -39,14 +39,14 @@ interface DatabaserInterface
      *
      * @throws DatabaserException
      */
-    public function queue(string $query): self;
+    public function queue(string $query): static;
 
     /**
      * Executes all queued queries.
      *
      * @throws DatabaserException
      */
-    public function flush(): self;
+    public function flush(): static;
 
     /**
      * Returns the ID of the last inserted row or sequence value.
@@ -141,20 +141,20 @@ interface DatabaserInterface
     /**
      * Sets external profiler for queries.
      */
-    public function setProfiler(Closure $profiler): self;
+    public function setProfiler(Closure $profiler): static;
 
     /**
      * Sets external denormalizer for arrays to objects conversion.
      */
-    public function setDenormalizer(Closure $denormalizer): self;
+    public function setDenormalizer(Closure $denormalizer): static;
 
     /**
      * Sets mode for fetchAll() method.
      */
-    public function setMode(DatabaserResultModeEnum $mode): self;
+    public function setMode(DatabaserResultModeEnum $mode): static;
 
     /**
      * Convert result to camel case.
      */
-    public function setCamelize(bool $camelize): self;
+    public function setCamelize(bool $camelize): static;
 }

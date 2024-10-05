@@ -96,7 +96,7 @@ interface DatabaserResultInterface
     /**
      * Moves internal result pointer.
      */
-    public function seek(int $i = 0): self;
+    public function seek(int $i = 0): static;
 
     /**
      * Gets number of affected rows.
@@ -111,10 +111,10 @@ interface DatabaserResultInterface
     /**
      * Sets mode for fetchAll() method.
      */
-    public function setMode(?DatabaserResultModeEnum $mode): self;
+    public function setMode(?DatabaserResultModeEnum $mode): static;
 
     /**
      * Convert result to camel case.
      */
-    public function setCamelize(bool $camelize): self;
+    public function setCamelize(bool $camelize): static;
 }
