@@ -134,12 +134,12 @@ interface DatabaserInterface
     public function isInTrans(): bool;
 
     /**
-     * Timer of executed queries.
+     * Gets timer of executed queries.
      */
     public function getTimer(): float;
 
     /**
-     * Count of executed queries.
+     * Gets count of executed queries.
      */
     public function getCounter(): int;
 }

@@ -8,19 +8,19 @@ use SWF\Enum\DatabaserResultModeEnum;
 final class Databaser
 {
     /**
-     * Timer of executed queries of all connections.
+     * Gets timer of executed queries of all connections.
      */
     public static function getTimer(): float
     {
-        return DatabaserParams::$timer;
+        return DatabaserRegistry::$timer;
     }
 
     /**
-     * Count of executed queries of all connections.
+     * Gets count of executed queries of all connections.
      */
     public static function getCounter(): int
     {
-        return DatabaserParams::$counter;
+        return DatabaserRegistry::$counter;
     }
 
     /**
@@ -28,7 +28,7 @@ final class Databaser
      */
     public static function setCamelize(bool $camelize): void
     {
-        DatabaserParams::$camelize = $camelize;
+        DatabaserRegistry::$camelize = $camelize;
     }
 
     /**
@@ -36,7 +36,7 @@ final class Databaser
      */
     public static function setFetchMode(DatabaserResultModeEnum $fetchMode): void
     {
-        DatabaserParams::$fetchMode = $fetchMode;
+        DatabaserRegistry::$fetchMode = $fetchMode;
     }
 
     /**
@@ -44,7 +44,7 @@ final class Databaser
      */
     public static function setDenormalizer(Closure $denormalizer): void
     {
-        DatabaserParams::$denormalizer = $denormalizer;
+        DatabaserRegistry::$denormalizer = $denormalizer;
     }
 
     /**
@@ -52,6 +52,6 @@ final class Databaser
      */
     public static function setProfiler(Closure $profiler): void
     {
-        DatabaserParams::$profiler = $profiler;
+        DatabaserRegistry::$profiler = $profiler;
     }
 }

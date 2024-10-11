@@ -33,8 +33,8 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function fetchAll(?string $class = null): array
     {
         if (null === $class) {
-            $fetchMode = DatabaserParams::$fetchMode ?? DatabaserResultModeEnum::ASSOC;
-        } elseif (null === DatabaserParams::$denormalizer) {
+            $fetchMode = DatabaserRegistry::$fetchMode ?? DatabaserResultModeEnum::ASSOC;
+        } elseif (null === DatabaserRegistry::$denormalizer) {
             throw new DatabaserException('For use denormalization you must set denormalizer before');
         } else {
             $fetchMode = DatabaserResultModeEnum::OBJECT;
@@ -45,20 +45,20 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
             switch ($fetchMode) {
                 case DatabaserResultModeEnum::ASSOC:
                     $row = array_combine($this->colNames, $this->typifyRow($row));
-                    if (DatabaserParams::$camelize) {
+                    if (DatabaserRegistry::$camelize) {
                         $row = $this->camelizeRow($row);
                     }
                     break;
                 case DatabaserResultModeEnum::OBJECT:
                     $row = array_combine($this->colNames, $this->typifyRow($row, null !== $class));
-                    if (DatabaserParams::$camelize) {
+                    if (DatabaserRegistry::$camelize) {
                         $row = $this->camelizeRow($row);
                     }
-                    $row = null === $class ? (object) $row : (DatabaserParams::$denormalizer)($row, $class);
+                    $row = null === $class ? (object) $row : (DatabaserRegistry::$denormalizer)($row, $class);
                     break;
                 default:
                     $row = $this->typifyRow($row);
-                    if (DatabaserParams::$camelize) {
+                    if (DatabaserRegistry::$camelize) {
                         $row = $this->camelizeRow($row);
                     }
             }
@@ -81,7 +81,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     {
         while (false !== ($row = $this->fetchNextRow())) {
             $row = $this->typifyRow($row);
-            if (DatabaserParams::$camelize) {
+            if (DatabaserRegistry::$camelize) {
                 $row = $this->camelizeRow($row);
             }
 
@@ -100,7 +100,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         }
 
         $row = $this->typifyRow($row);
-        if (DatabaserParams::$camelize) {
+        if (DatabaserRegistry::$camelize) {
             $row = $this->camelizeRow($row);
         }
 
@@ -114,7 +114,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     {
         while (false !== ($row = $this->fetchNextRow())) {
             $row = array_combine($this->colNames, $this->typifyRow($row));
-            if (DatabaserParams::$camelize) {
+            if (DatabaserRegistry::$camelize) {
                 $row = $this->camelizeRow($row);
             }
 
@@ -133,7 +133,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         }
 
         $row = array_combine($this->colNames, $this->typifyRow($row));
-        if (DatabaserParams::$camelize) {
+        if (DatabaserRegistry::$camelize) {
             $row = $this->camelizeRow($row);
         }
 
@@ -146,18 +146,18 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function iterateObject(?string $class = null): iterable
     {
         if (null !== $class) {
-            if (null === DatabaserParams::$denormalizer) {
+            if (null === DatabaserRegistry::$denormalizer) {
                 throw new DatabaserException('For use denormalization you must set denormalizer before');
             }
         }
 
         while (false !== ($row = $this->fetchNextRow())) {
             $row = array_combine($this->colNames, $this->typifyRow($row, null !== $class));
-            if (DatabaserParams::$camelize) {
+            if (DatabaserRegistry::$camelize) {
                 $row = $this->camelizeRow($row);
             }
 
-            yield null === $class ? (object) $row : (DatabaserParams::$denormalizer)($row, $class);
+            yield null === $class ? (object) $row : (DatabaserRegistry::$denormalizer)($row, $class);
         }
     }
 
@@ -167,7 +167,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function fetchObject(?string $class = null)
     {
         if (null !== $class) {
-            if (null === DatabaserParams::$denormalizer) {
+            if (null === DatabaserRegistry::$denormalizer) {
                 throw new DatabaserException('For use denormalization you must set denormalizer before');
             }
         }
@@ -178,11 +178,11 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         }
 
         $row = array_combine($this->colNames, $this->typifyRow($row, null !== $class));
-        if (DatabaserParams::$camelize) {
+        if (DatabaserRegistry::$camelize) {
             $row = $this->camelizeRow($row);
         }
 
-        return null === $class ? (object) $row : (DatabaserParams::$denormalizer)($row, $class);
+        return null === $class ? (object) $row : (DatabaserRegistry::$denormalizer)($row, $class);
     }
 
     abstract protected function fetchNextRowColumn(int $i): false|float|int|null|string;

@@ -8,7 +8,7 @@ use SWF\Enum\DatabaserResultModeEnum;
 /**
  * @internal
  */
-final class DatabaserParams
+final class DatabaserRegistry
 {
     public static float $timer = 0.0;
 

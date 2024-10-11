@@ -207,13 +207,13 @@ abstract class AbstractDatabaser implements DatabaserInterface
             $timer = gettimeofday(true) - $timer;
 
             $this->timer += $timer;
-            DatabaserParams::$timer += $timer;
+            DatabaserRegistry::$timer += $timer;
 
             $this->counter++;
-            DatabaserParams::$counter++;
+            DatabaserRegistry::$counter++;
 
-            if (null !== DatabaserParams::$profiler) {
-                (DatabaserParams::$profiler)($this, $timer, $queries);
+            if (null !== DatabaserRegistry::$profiler) {
+                (DatabaserRegistry::$profiler)($this, $timer, $queries);
             }
         }
     }
