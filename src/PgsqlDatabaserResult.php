@@ -2,18 +2,13 @@
 
 namespace SWF;
 
-use Closure;
 use PgSql\Result as PgSqlResult;
-use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Enum\DatabaserResultTypeEnum;
 
 class PgsqlDatabaserResult extends AbstractDatabaserResult
 {
     public function __construct(
         private readonly PgSqlResult $result,
-        protected ?Closure $denormalizer,
-        protected ?DatabaserResultModeEnum $mode,
-        protected bool $camelize,
     ) {
         $numFields = pg_num_fields($this->result);
 

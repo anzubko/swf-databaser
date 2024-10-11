@@ -2,12 +2,15 @@
 
 namespace SWF\Interface;
 
-use Closure;
-use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Exception\DatabaserException;
 
 interface DatabaserInterface
 {
+    /**
+     * Gets name of database connection.
+     */
+    public function getName(): string;
+
     /**
      * Begins transaction.
      */
@@ -50,6 +53,8 @@ interface DatabaserInterface
 
     /**
      * Returns the ID of the last inserted row or sequence value.
+     *
+     * @throws DatabaserException
      */
     public function lastInsertId(): int;
 
@@ -124,37 +129,17 @@ interface DatabaserInterface
     public function spaces(array $expressions, string $default = ''): string;
 
     /**
-     * Gets timer of executed queries.
-     */
-    public function getTimer(): float;
-
-    /**
-     * Gets count of executed queries.
-     */
-    public function getCounter(): int;
-
-    /**
      * Gets transaction status.
      */
     public function isInTrans(): bool;
 
     /**
-     * Sets external profiler for queries.
+     * Timer of executed queries.
      */
-    public function setProfiler(Closure $profiler): static;
+    public function getTimer(): float;
 
     /**
-     * Sets external denormalizer for array to object conversions.
+     * Count of executed queries.
      */
-    public function setDenormalizer(Closure $denormalizer): static;
-
-    /**
-     * Sets mode for fetchAll() method.
-     */
-    public function setMode(DatabaserResultModeEnum $mode): static;
-
-    /**
-     * Convert result to camel case.
-     */
-    public function setCamelize(bool $camelize): static;
+    public function getCounter(): int;
 }

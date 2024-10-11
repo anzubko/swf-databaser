@@ -2,7 +2,6 @@
 
 namespace SWF;
 
-use Closure;
 use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Enum\DatabaserResultTypeEnum;
 use SWF\Exception\DatabaserException;
@@ -23,19 +22,10 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
      */
     protected array $colTypes = [];
 
-    protected ?Closure $denormalizer = null;
-
-    protected ?DatabaserResultModeEnum $mode = null;
-
-    protected bool $camelize = false;
-
     /**
      * @return mixed[][]
      */
-    protected function fetchAllRows(): array
-    {
-        return [];
-    }
+    abstract protected function fetchAllRows(): array;
 
     /**
      * @inheritDoc
@@ -43,32 +33,32 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function fetchAll(?string $class = null): array
     {
         if (null === $class) {
-            $mode = $this->mode ?? DatabaserResultModeEnum::ASSOC;
-        } elseif (null === $this->denormalizer) {
+            $fetchMode = DatabaserParams::$fetchMode ?? DatabaserResultModeEnum::ASSOC;
+        } elseif (null === DatabaserParams::$denormalizer) {
             throw new DatabaserException('For use denormalization you must set denormalizer before');
         } else {
-            $mode = DatabaserResultModeEnum::OBJECT;
+            $fetchMode = DatabaserResultModeEnum::OBJECT;
         }
 
         $rows = [];
         foreach ($this->fetchAllRows() as $row) {
-            switch ($mode) {
+            switch ($fetchMode) {
                 case DatabaserResultModeEnum::ASSOC:
                     $row = array_combine($this->colNames, $this->typifyRow($row));
-                    if ($this->camelize) {
+                    if (DatabaserParams::$camelize) {
                         $row = $this->camelizeRow($row);
                     }
                     break;
                 case DatabaserResultModeEnum::OBJECT:
                     $row = array_combine($this->colNames, $this->typifyRow($row, null !== $class));
-                    if ($this->camelize) {
+                    if (DatabaserParams::$camelize) {
                         $row = $this->camelizeRow($row);
                     }
-                    $row = null === $class ? (object) $row : ($this->denormalizer)($row, $class);
+                    $row = null === $class ? (object) $row : (DatabaserParams::$denormalizer)($row, $class);
                     break;
                 default:
                     $row = $this->typifyRow($row);
-                    if ($this->camelize) {
+                    if (DatabaserParams::$camelize) {
                         $row = $this->camelizeRow($row);
                     }
             }
@@ -82,10 +72,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     /**
      * @return mixed[]|false
      */
-    protected function fetchNextRow(): array|false
-    {
-        return false;
-    }
+    abstract protected function fetchNextRow(): array|false;
 
     /**
      * @inheritDoc
@@ -94,7 +81,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     {
         while (false !== ($row = $this->fetchNextRow())) {
             $row = $this->typifyRow($row);
-            if ($this->camelize) {
+            if (DatabaserParams::$camelize) {
                 $row = $this->camelizeRow($row);
             }
 
@@ -113,7 +100,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         }
 
         $row = $this->typifyRow($row);
-        if ($this->camelize) {
+        if (DatabaserParams::$camelize) {
             $row = $this->camelizeRow($row);
         }
 
@@ -127,7 +114,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     {
         while (false !== ($row = $this->fetchNextRow())) {
             $row = array_combine($this->colNames, $this->typifyRow($row));
-            if ($this->camelize) {
+            if (DatabaserParams::$camelize) {
                 $row = $this->camelizeRow($row);
             }
 
@@ -146,7 +133,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         }
 
         $row = array_combine($this->colNames, $this->typifyRow($row));
-        if ($this->camelize) {
+        if (DatabaserParams::$camelize) {
             $row = $this->camelizeRow($row);
         }
 
@@ -159,18 +146,18 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function iterateObject(?string $class = null): iterable
     {
         if (null !== $class) {
-            if (null === $this->denormalizer) {
+            if (null === DatabaserParams::$denormalizer) {
                 throw new DatabaserException('For use denormalization you must set denormalizer before');
             }
         }
 
         while (false !== ($row = $this->fetchNextRow())) {
             $row = array_combine($this->colNames, $this->typifyRow($row, null !== $class));
-            if ($this->camelize) {
+            if (DatabaserParams::$camelize) {
                 $row = $this->camelizeRow($row);
             }
 
-            yield null === $class ? (object) $row : ($this->denormalizer)($row, $class);
+            yield null === $class ? (object) $row : (DatabaserParams::$denormalizer)($row, $class);
         }
     }
 
@@ -180,7 +167,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function fetchObject(?string $class = null)
     {
         if (null !== $class) {
-            if (null === $this->denormalizer) {
+            if (null === DatabaserParams::$denormalizer) {
                 throw new DatabaserException('For use denormalization you must set denormalizer before');
             }
         }
@@ -191,17 +178,14 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         }
 
         $row = array_combine($this->colNames, $this->typifyRow($row, null !== $class));
-        if ($this->camelize) {
+        if (DatabaserParams::$camelize) {
             $row = $this->camelizeRow($row);
         }
 
-        return null === $class ? (object) $row : ($this->denormalizer)($row, $class);
+        return null === $class ? (object) $row : (DatabaserParams::$denormalizer)($row, $class);
     }
 
-    protected function fetchNextRowColumn(int $i): false|float|int|null|string
-    {
-        return false;
-    }
+    abstract protected function fetchNextRowColumn(int $i): false|float|int|null|string;
 
     /**
      * @inheritDoc
@@ -242,10 +226,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     /**
      * @return mixed[]
      */
-    protected function fetchAllRowsColumns(int $i): array
-    {
-        return [];
-    }
+    abstract protected function fetchAllRowsColumns(int $i): array;
 
     /**
      * @inheritDoc
@@ -266,50 +247,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         }
 
         return $columns;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function seek(int $i = 0): static
-    {
-        return $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function affectedRows(): int
-    {
-        return 0;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function numRows(): int
-    {
-        return 0;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function setMode(?DatabaserResultModeEnum $mode): static
-    {
-        $this->mode = $mode;
-
-        return $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function setCamelize(bool $camelize): static
-    {
-        $this->camelize = $camelize;
-
-        return $this;
     }
 
     /**

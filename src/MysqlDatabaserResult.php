@@ -2,9 +2,7 @@
 
 namespace SWF;
 
-use Closure;
 use mysqli_result;
-use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Enum\DatabaserResultTypeEnum;
 
 class MysqlDatabaserResult extends AbstractDatabaserResult
@@ -12,9 +10,6 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
     public function __construct(
         private readonly mysqli_result $result,
         private readonly int $affectedRows,
-        protected ?Closure $denormalizer,
-        protected ?DatabaserResultModeEnum $mode,
-        protected bool $camelize,
     ) {
         if (0 === $this->result->field_count) {
             return;
@@ -40,6 +35,7 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
                     break;
                 case MYSQLI_TYPE_JSON:
                     $this->colTypes[$i] = DatabaserResultTypeEnum::JSON;
+                    break;
             }
         }
     }

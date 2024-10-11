@@ -2,7 +2,6 @@
 
 namespace SWF\Interface;
 
-use SWF\Enum\DatabaserResultModeEnum;
 use SWF\Exception\DatabaserException;
 
 interface DatabaserResultInterface
@@ -107,14 +106,4 @@ interface DatabaserResultInterface
      * Gets the number of result rows.
      */
     public function numRows(): int;
-
-    /**
-     * Sets mode for fetchAll() method.
-     */
-    public function setMode(?DatabaserResultModeEnum $mode): static;
-
-    /**
-     * Convert result to camel case.
-     */
-    public function setCamelize(bool $camelize): static;
 }

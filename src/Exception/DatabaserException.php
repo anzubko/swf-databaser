@@ -9,33 +9,24 @@ class DatabaserException extends Exception
     /**
      * Code which identifies SQL error condition.
      */
-    protected string $sqlState = 'HY000';
+    protected string $state = 'HY000';
 
-    /**
-     * Adds sqlstate to message.
-     */
-    public function sqlStateToMessage(): static
+    public function stateToMessage(): static
     {
-        $this->message = sprintf('[%s] %s', $this->sqlState, $this->message);
+        $this->message = sprintf('[%s] %s', $this->state, $this->message);
 
         return $this;
     }
 
-    /**
-     * Sets sqlstate.
-     */
-    public function setSqlState(string $sqlState): static
+    public function setState(string $state): static
     {
-        $this->sqlState = $sqlState;
+        $this->state = $state;
 
         return $this;
     }
 
-    /**
-     * Gets sqlstate.
-     */
-    public function getSqlState(): string
+    public function getState(): string
     {
-        return $this->sqlState;
+        return $this->state;
     }
 }
