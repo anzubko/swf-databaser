@@ -8,7 +8,6 @@ use mysqli_result;
 use mysqli_sql_exception;
 use SWF\Exception\DatabaserException;
 use SWF\Interface\DatabaserResultInterface;
-use function strlen;
 
 class MysqlDatabaser extends AbstractDatabaser
 {
@@ -29,6 +28,7 @@ class MysqlDatabaser extends AbstractDatabaser
     private mysqli $connection;
 
     /**
+     * @param string|null $name Optional name for connection.
      * @param string|null $host Host or socket to connect.
      * @param int|null $port Port to connect.
      * @param string|null $db Database name.
@@ -36,18 +36,44 @@ class MysqlDatabaser extends AbstractDatabaser
      * @param string|null $pass Password.
      * @param bool $persistent Makes connection persistent.
      * @param string $charset Default charset.
-     * @param string|null $name Optional name for connection.
+     *
+     * @throws DatabaserException
      */
     public function __construct(
-        private readonly ?string $host = null,
-        private readonly ?int $port = null,
-        private readonly ?string $db = null,
-        private readonly ?string $user = null,
-        private readonly ?string $pass = null,
-        private readonly bool $persistent = false,
-        private readonly string $charset = 'utf8mb4',
         private readonly ?string $name = null,
+        ?string $host = null,
+        ?int $port = null,
+        ?string $db = null,
+        ?string $user = null,
+        ?string $pass = null,
+        bool $persistent = false,
+        string $charset = 'utf8mb4',
     ) {
+        mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+        $socket = null;
+        if (null === $host) {
+            $host = ini_get('mysqli.default_host');
+            if (false === $host || '' === $host) {
+                $host = 'localhost';
+            }
+        } elseif (str_starts_with($host, '/')) {
+            $host = 'localhost';
+            $socket = $host;
+        }
+
+        if ($persistent) {
+            $host = sprintf('p:%s', $host);
+        }
+
+        try {
+            $connection = new mysqli($host, $user, $pass, $db, $port, $socket);
+            $connection->set_charset($charset);
+        } catch (mysqli_sql_exception $e) {
+            throw (new DatabaserException($e->getMessage()))->setState($e->getSqlState())->stateToMessage();
+        }
+
+        $this->connection = $connection;
     }
 
     /**
@@ -61,7 +87,7 @@ class MysqlDatabaser extends AbstractDatabaser
     protected function assignResult(?object $result): DatabaserResultInterface
     {
         if ($result instanceof mysqli_result) {
-            return new MysqlDatabaserResult($result, (int) $this->getConnection()->affected_rows);
+            return new MysqlDatabaserResult($result, (int) $this->connection->affected_rows);
         }
 
         return new EmptyDatabaserResult();
@@ -69,17 +95,17 @@ class MysqlDatabaser extends AbstractDatabaser
 
     public function lastInsertId(): int
     {
-        return (int) $this->getConnection()->insert_id;
+        return (int) $this->connection->insert_id;
     }
 
     protected function executeQueries(string $queries): ?object
     {
         try {
-            $this->getConnection()->multi_query($queries);
+            $this->connection->multi_query($queries);
 
             do {
-                $result = $this->getConnection()->store_result();
-            } while ($this->getConnection()->next_result());
+                $result = $this->connection->store_result();
+            } while ($this->connection->next_result());
         } catch (mysqli_sql_exception $e) {
             throw (new DatabaserException($e->getMessage()))->setState($e->getSqlState())->stateToMessage();
         }
@@ -89,58 +115,6 @@ class MysqlDatabaser extends AbstractDatabaser
 
     protected function escapeString(string $string): string
     {
-        return sprintf("'%s'", $this->getConnection()->real_escape_string($string));
-    }
-
-    /**
-     * @throws DatabaserException
-     */
-    private function getConnection(): mysqli
-    {
-        return $this->connection ??= $this->connect();
-    }
-
-    /**
-     * @throws DatabaserException
-     */
-    private function connect(): mysqli
-    {
-        mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-
-        $host = $this->host;
-        $socket = null;
-
-        if (null === $host) {
-            $defaultHost = ini_get('mysqli.default_host');
-            if (false !== $defaultHost && strlen($defaultHost) > 0) {
-                $host = $defaultHost;
-            } else {
-                $host = 'localhost';
-            }
-        } elseif (str_starts_with($host, '/')) {
-            $host = 'localhost';
-            $socket = $host;
-        }
-
-        if ($this->persistent) {
-            $host = sprintf('p:%s', $host);
-        }
-
-        try {
-            $connection = new mysqli(
-                hostname: $host,
-                username: $this->user,
-                password: $this->pass,
-                database: $this->db,
-                port: $this->port,
-                socket: $socket,
-            );
-
-            $connection->set_charset($this->charset);
-        } catch (mysqli_sql_exception $e) {
-            throw (new DatabaserException($e->getMessage()))->setState($e->getSqlState())->stateToMessage();
-        }
-
-        return $connection;
+        return sprintf("'%s'", $this->connection->real_escape_string($string));
     }
 }
