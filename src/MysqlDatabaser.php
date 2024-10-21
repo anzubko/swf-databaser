@@ -73,7 +73,7 @@ class MysqlDatabaser extends AbstractDatabaser
         return new EmptyDatabaserResult();
     }
 
-    public function lastInsertId(): int
+    public function getLastInsertId(): int
     {
         return (int) $this->connection->insert_id;
     }

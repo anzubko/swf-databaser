@@ -106,15 +106,13 @@ abstract class AbstractDatabaser implements DatabaserInterface
             $this->queue->pop();
             $this->depth->dec();
             $this->execute();
+        } elseif ($this->depth->get() > 1 && $this->isSavePointsSupported()) {
+            $this->queue->add($this->makeReleaseSavePointCommand($this->depth->get() - 1));
+            $this->execute();
+            $this->depth->dec();
         } elseif ($this->depth->get() > 1) {
-            if ($this->isSavePointsSupported()) {
-                $this->queue->add($this->makeReleaseSavePointCommand($this->depth->get() - 1));
-                $this->execute();
-                $this->depth->dec();
-            } else {
-                $this->depth->dec();
-                $this->execute();
-            }
+            $this->depth->dec();
+            $this->execute();
         } else {
             $this->queue->add($this->makeCommitCommand());
             $this->execute();
@@ -161,16 +159,16 @@ abstract class AbstractDatabaser implements DatabaserInterface
             $this->queue->pop();
             $this->depth->dec();
             $this->execute();
+        } elseif ($this->depth->get() > 1 && $this->isSavePointsSupported()) {
+            $this->queue->add($this->makeRollbackCommand($this->depth->get() - 1));
+            $this->execute();
+            $this->depth->dec();
         } elseif ($this->depth->get() > 1) {
-            if ($this->isSavePointsSupported()) {
-                $this->queue($this->makeRollbackCommand($this->depth->get() - 1))->flush();
-                $this->depth->dec();
-            } else {
-                $this->depth->dec();
-                $this->execute();
-            }
+            $this->depth->dec();
+            $this->execute();
         } else {
-            $this->queue($this->makeRollbackCommand())->flush();
+            $this->queue->add($this->makeRollbackCommand());
+            $this->execute();
             $this->depth->dec();
         }
 
@@ -218,7 +216,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function lastInsertId(): int
+    public function getLastInsertId(): int
     {
         return 0;
     }
@@ -231,7 +229,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @throws DatabaserException
      */
-    protected function execute(): ?object
+    private function execute(): ?object
     {
         if (0 === $this->queue->count()) {
             return null;
