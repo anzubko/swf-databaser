@@ -16,22 +16,6 @@ use function is_scalar;
 
 abstract class AbstractDatabaser implements DatabaserInterface
 {
-    private const SAVEPOINT_PATTERN = 'SWF_POINT_%d';
-
-    protected string $beginCommand;
-
-    protected string $beginWithIsolationCommand;
-
-    protected string $commitCommand;
-
-    protected string $rollbackCommand;
-
-    protected ?string $createSavePointCommand = null;
-
-    protected ?string $releaseSavePointCommand = null;
-
-    protected ?string $rollbackToSavePointCommand = null;
-
     private float $timer = 0.0;
 
     private int $counter = 0;
@@ -40,24 +24,70 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     private DatabaserDepth $depth;
 
+    public function __construct(
+        private readonly string $name,
+    ) {
+        $this->depth = new DatabaserDepth();
+
+        $this->queue = new DatabaserQueue();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    protected function makeBeginCommand(?string $isolation = null): string
+    {
+        if (null === $isolation) {
+            return 'START TRANSACTION';
+        }
+
+        return sprintf('SET TRANSACTION %s; START TRANSACTION', $isolation);
+    }
+
+    protected function isSavePointsSupported(): bool
+    {
+        return true;
+    }
+
+    protected function makeSavePointName(int $savePointId): string
+    {
+        return sprintf('SWF_POINT_%d', $savePointId);
+    }
+
+    protected function makeCreateSavePointCommand(int $savePointId): string
+    {
+        return sprintf('SAVEPOINT %s', $this->makeSavePointName($savePointId));
+    }
+
     /**
      * @inheritDoc
      */
     public function begin(?string $isolation = null): static
     {
-        $this->getDepth()->inc();
+        $this->depth->inc();
 
-        if (1 === $this->getDepth()->get()) {
-            if (null === $isolation) {
-                $this->getQueue()->add($this->beginCommand, DatabaserQueueTypeEnum::BEGIN);
-            } else {
-                $this->getQueue()->add(sprintf($this->beginWithIsolationCommand, $isolation), DatabaserQueueTypeEnum::BEGIN);
-            }
-        } elseif (null !== $this->createSavePointCommand) {
-            $this->getQueue()->add(sprintf($this->createSavePointCommand, sprintf(self::SAVEPOINT_PATTERN, $this->getDepth()->get() - 1)), DatabaserQueueTypeEnum::SAVEPOINT);
+        if (1 === $this->depth->get()) {
+            $this->queue->add($this->makeBeginCommand($isolation), DatabaserQueueTypeEnum::BEGIN);
+        } elseif ($this->isSavePointsSupported()) {
+            $this->queue->add($this->makeCreateSavePointCommand($this->depth->get() - 1), DatabaserQueueTypeEnum::SAVEPOINT);
         }
 
         return $this;
+    }
+
+    protected function makeCommitCommand(): string
+    {
+        return 'COMMIT';
+    }
+
+    protected function makeReleaseSavePointCommand(int $savePointId): string
+    {
+        return sprintf('RELEASE SAVEPOINT %s', $this->makeSavePointName($savePointId));
     }
 
     /**
@@ -65,33 +95,42 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function commit(): static
     {
-        if (null !== $this->createSavePointCommand) {
-            while (DatabaserQueueTypeEnum::SAVEPOINT === $this->getQueue()->getLastType()) {
-                $this->getQueue()->pop();
-                $this->getDepth()->dec();
+        if ($this->isSavePointsSupported()) {
+            while (DatabaserQueueTypeEnum::SAVEPOINT === $this->queue->getLastType()) {
+                $this->queue->pop();
+                $this->depth->dec();
             }
         }
 
-        if (DatabaserQueueTypeEnum::BEGIN === $this->getQueue()->getLastType()) {
-            $this->getQueue()->pop();
-            $this->getDepth()->dec();
+        if (DatabaserQueueTypeEnum::BEGIN === $this->queue->getLastType()) {
+            $this->queue->pop();
+            $this->depth->dec();
             $this->execute();
-        } elseif ($this->getDepth()->get() > 1) {
-            if (null === $this->releaseSavePointCommand) {
-                $this->getDepth()->dec();
+        } elseif ($this->depth->get() > 1) {
+            if ($this->isSavePointsSupported()) {
+                $this->queue->add($this->makeReleaseSavePointCommand($this->depth->get() - 1));
                 $this->execute();
+                $this->depth->dec();
             } else {
-                $this->getQueue()->add(sprintf($this->releaseSavePointCommand, sprintf(self::SAVEPOINT_PATTERN, $this->getDepth()->get() - 1)));
+                $this->depth->dec();
                 $this->execute();
-                $this->getDepth()->dec();
             }
         } else {
-            $this->getQueue()->add($this->commitCommand);
+            $this->queue->add($this->makeCommitCommand());
             $this->execute();
-            $this->getDepth()->dec();
+            $this->depth->dec();
         }
 
         return $this;
+    }
+
+    protected function makeRollbackCommand(?int $savePointId = null): string
+    {
+        if (null === $savePointId) {
+            return 'ROLLBACK';
+        }
+
+        return sprintf('ROLLBACK TO %s', $this->makeSavePointName($savePointId));
     }
 
     /**
@@ -100,39 +139,39 @@ abstract class AbstractDatabaser implements DatabaserInterface
     public function rollback(bool $full = false): static
     {
         if ($full) {
-            if ($this->getDepth()->get() > 0) {
-                $this->getQueue()->add($this->rollbackCommand);
+            if ($this->depth->get() > 0) {
+                $this->queue->add($this->makeRollbackCommand());
                 $this->execute();
-                $this->getDepth()->reset();
+                $this->depth->reset();
             }
 
-            $this->getQueue()->clear();
+            $this->queue->clear();
 
             return $this;
         }
 
-        if (null !== $this->createSavePointCommand) {
-            while (DatabaserQueueTypeEnum::SAVEPOINT === $this->getQueue()->getLastType()) {
-                $this->getQueue()->pop();
-                $this->getDepth()->dec();
+        if ($this->isSavePointsSupported()) {
+            while (DatabaserQueueTypeEnum::SAVEPOINT === $this->queue->getLastType()) {
+                $this->queue->pop();
+                $this->depth->dec();
             }
         }
 
-        if (DatabaserQueueTypeEnum::BEGIN === $this->getQueue()->getLastType()) {
-            $this->getQueue()->pop();
-            $this->getDepth()->dec();
+        if (DatabaserQueueTypeEnum::BEGIN === $this->queue->getLastType()) {
+            $this->queue->pop();
+            $this->depth->dec();
             $this->execute();
-        } elseif ($this->getDepth()->get() > 1) {
-            if (null === $this->rollbackToSavePointCommand) {
-                $this->getDepth()->dec();
-                $this->execute();
+        } elseif ($this->depth->get() > 1) {
+            if ($this->isSavePointsSupported()) {
+                $this->queue($this->makeRollbackCommand($this->depth->get() - 1))->flush();
+                $this->depth->dec();
             } else {
-                $this->queue(sprintf($this->rollbackToSavePointCommand, sprintf(self::SAVEPOINT_PATTERN, $this->getDepth()->get() - 1)))->flush();
-                $this->getDepth()->dec();
+                $this->depth->dec();
+                $this->execute();
             }
         } else {
-            $this->queue($this->rollbackCommand)->flush();
-            $this->getDepth()->dec();
+            $this->queue($this->makeRollbackCommand())->flush();
+            $this->depth->dec();
         }
 
         return $this;
@@ -148,7 +187,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function query(string $query): DatabaserResultInterface
     {
-        $this->getQueue()->add($query);
+        $this->queue->add($query);
 
         return $this->assignResult($this->execute());
     }
@@ -158,8 +197,8 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function queue(string $query): static
     {
-        $this->getQueue()->add($query);
-        if ($this->getQueue()->count() > 64) {
+        $this->queue->add($query);
+        if ($this->queue->count() > 64) {
             $this->execute();
         }
 
@@ -194,13 +233,13 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     protected function execute(): ?object
     {
-        if (0 === $this->getQueue()->count()) {
+        if (0 === $this->queue->count()) {
             return null;
         }
 
         $timer = gettimeofday(true);
 
-        $queries = $this->getQueue()->takeAwayQueries();
+        $queries = $this->queue->takeAwayQueries();
 
         try {
             return $this->executeQueries(implode('; ', $queries));
@@ -370,7 +409,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function isInTrans(): bool
     {
-        return $this->getDepth()->get() > 0;
+        return $this->depth->get() > 0;
     }
 
     /**
@@ -387,15 +426,5 @@ abstract class AbstractDatabaser implements DatabaserInterface
     public function getCounter(): int
     {
         return $this->counter;
-    }
-
-    private function getDepth(): DatabaserDepth
-    {
-        return $this->depth ??= new DatabaserDepth();
-    }
-
-    private function getQueue(): DatabaserQueue
-    {
-        return $this->queue ??= new DatabaserQueue();
     }
 }

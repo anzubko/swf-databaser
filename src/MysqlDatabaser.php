@@ -11,20 +11,6 @@ use SWF\Interface\DatabaserResultInterface;
 
 class MysqlDatabaser extends AbstractDatabaser
 {
-    protected string $beginCommand = 'START TRANSACTION';
-
-    protected string $beginWithIsolationCommand = 'SET TRANSACTION %s; START TRANSACTION';
-
-    protected string $commitCommand = 'COMMIT';
-
-    protected string $rollbackCommand = 'ROLLBACK';
-
-    protected ?string $createSavePointCommand = 'SAVEPOINT %s';
-
-    protected ?string $releaseSavePointCommand = 'RELEASE SAVEPOINT %s';
-
-    protected ?string $rollbackToSavePointCommand = 'ROLLBACK TO %s';
-
     private mysqli $connection;
 
     /**
@@ -40,7 +26,7 @@ class MysqlDatabaser extends AbstractDatabaser
      * @throws DatabaserException
      */
     public function __construct(
-        private readonly ?string $name = null,
+        ?string $name = null,
         ?string $host = null,
         ?int $port = null,
         ?string $db = null,
@@ -74,14 +60,8 @@ class MysqlDatabaser extends AbstractDatabaser
         }
 
         $this->connection = $connection;
-    }
 
-    /**
-     * @inheritDoc
-     */
-    public function getName(): string
-    {
-        return $this->name ?? 'Mysql';
+        parent::__construct($name ?? 'Mysql');
     }
 
     protected function assignResult(?object $result): DatabaserResultInterface

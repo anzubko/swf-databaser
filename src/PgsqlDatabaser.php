@@ -10,20 +10,6 @@ use SWF\Interface\DatabaserResultInterface;
 
 class PgsqlDatabaser extends AbstractDatabaser
 {
-    protected string $beginCommand = 'START TRANSACTION';
-
-    protected string $beginWithIsolationCommand = 'START TRANSACTION %s';
-
-    protected string $commitCommand = 'COMMIT';
-
-    protected string $rollbackCommand = 'ROLLBACK';
-
-    protected ?string $createSavePointCommand = 'SAVEPOINT %s';
-
-    protected ?string $releaseSavePointCommand = 'RELEASE SAVEPOINT %s';
-
-    protected ?string $rollbackToSavePointCommand = 'ROLLBACK TO %s';
-
     private PgSqlConnection $connection;
 
     /**
@@ -39,7 +25,7 @@ class PgsqlDatabaser extends AbstractDatabaser
      * @throws DatabaserException
      */
     public function __construct(
-        private readonly ?string $name = null,
+        ?string $name = null,
         ?string $host = null,
         ?int $port = null,
         ?string $db = null,
@@ -82,14 +68,17 @@ class PgsqlDatabaser extends AbstractDatabaser
         }
 
         $this->connection = $connection;
+
+        parent::__construct($name ?? 'Pgsql');
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function getName(): string
+    protected function makeBeginCommand(?string $isolation = null): string
     {
-        return $this->name ?? 'Pgsql';
+        if (null === $isolation) {
+            return 'START TRANSACTION';
+        }
+
+        return sprintf('START TRANSACTION %s', $isolation);
     }
 
     protected function assignResult(?object $result): DatabaserResultInterface
