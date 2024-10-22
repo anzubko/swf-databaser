@@ -39,13 +39,13 @@ class MysqlDatabaser extends AbstractDatabaser
 
         $socket = null;
         if (null === $host) {
-            $host = ini_get('mysqli.default_host');
-            if (false === $host || '' === $host) {
+            $host = (string) ini_get('mysqli.default_host');
+            if ('' === $host) {
                 $host = 'localhost';
             }
         } elseif (str_starts_with($host, '/')) {
-            $host = 'localhost';
             $socket = $host;
+            $host = 'localhost';
         }
 
         if ($persistent) {
