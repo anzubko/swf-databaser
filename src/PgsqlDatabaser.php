@@ -63,7 +63,7 @@ class PgsqlDatabaser extends AbstractDatabaser
 
         pg_set_error_verbosity($connection, PGSQL_ERRORS_VERBOSE);
 
-        if (-1 === pg_set_client_encoding($connection, $charset)) {
+        if (pg_set_client_encoding($connection, $charset) === -1) {
             throw (new DatabaserException(sprintf('Unable to set charset %s', $charset)))->stateToMessage();
         }
 

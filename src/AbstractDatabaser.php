@@ -71,7 +71,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     {
         $this->depth->inc();
 
-        if (1 === $this->depth->get()) {
+        if ($this->depth->get() === 1) {
             $this->queue->add($this->makeBeginCommand($isolation), DatabaserQueueTypeEnum::BEGIN);
         } elseif ($this->isSavePointsSupported()) {
             $this->queue->add($this->makeCreateSavePointCommand($this->depth->get() - 1), DatabaserQueueTypeEnum::SAVEPOINT);
@@ -106,17 +106,17 @@ abstract class AbstractDatabaser implements DatabaserInterface
             $this->queue->pop();
             $this->depth->dec();
             $this->execute();
-        } elseif ($this->depth->get() > 1 && $this->isSavePointsSupported()) {
-            $this->queue->add($this->makeReleaseSavePointCommand($this->depth->get() - 1));
-            $this->execute();
-            $this->depth->dec();
-        } elseif ($this->depth->get() > 1) {
-            $this->depth->dec();
-            $this->execute();
-        } else {
+        } elseif ($this->depth->get() === 0) {
             $this->queue->add($this->makeCommitCommand());
             $this->execute();
             $this->depth->dec();
+        } elseif ($this->isSavePointsSupported()) {
+            $this->queue->add($this->makeReleaseSavePointCommand($this->depth->get() - 1));
+            $this->execute();
+            $this->depth->dec();
+        } else {
+            $this->depth->dec();
+            $this->execute();
         }
 
         return $this;
@@ -159,17 +159,17 @@ abstract class AbstractDatabaser implements DatabaserInterface
             $this->queue->pop();
             $this->depth->dec();
             $this->execute();
-        } elseif ($this->depth->get() > 1 && $this->isSavePointsSupported()) {
-            $this->queue->add($this->makeRollbackCommand($this->depth->get() - 1));
-            $this->execute();
-            $this->depth->dec();
-        } elseif ($this->depth->get() > 1) {
-            $this->depth->dec();
-            $this->execute();
-        } else {
+        } elseif ($this->depth->get() === 0) {
             $this->queue->add($this->makeRollbackCommand());
             $this->execute();
             $this->depth->dec();
+        } elseif ($this->isSavePointsSupported()) {
+            $this->queue->add($this->makeRollbackCommand($this->depth->get() - 1));
+            $this->execute();
+            $this->depth->dec();
+        } else {
+            $this->depth->dec();
+            $this->execute();
         }
 
         return $this;
@@ -231,7 +231,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     private function execute(): ?object
     {
-        if (0 === $this->queue->count()) {
+        if ($this->queue->count() === 0) {
             return null;
         }
 
