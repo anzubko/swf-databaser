@@ -72,6 +72,11 @@ class PgsqlDatabaser extends AbstractDatabaser
         parent::__construct($name ?? 'Pgsql');
     }
 
+    public function getInsertId(): int
+    {
+        throw (new DatabaserException('Not implemented'))->stateToMessage();
+    }
+
     protected function makeBeginCommand(?string $isolation = null): string
     {
         if (null === $isolation) {

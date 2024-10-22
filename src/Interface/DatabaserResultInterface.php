@@ -94,17 +94,17 @@ interface DatabaserResultInterface
     public function fetchAllColumns(int $i = 0): array;
 
     /**
+     * Gets count of affected rows.
+     */
+    public function getAffectedRowsCount(): int;
+
+    /**
+     * Gets the count of result rows.
+     */
+    public function getRowsCount(): int;
+
+    /**
      * Moves internal result pointer.
      */
     public function seek(int $i = 0): static;
-
-    /**
-     * Gets number of affected rows.
-     */
-    public function affectedRows(): int;
-
-    /**
-     * Gets the number of result rows.
-     */
-    public function numRows(): int;
 }

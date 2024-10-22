@@ -64,6 +64,11 @@ class MysqlDatabaser extends AbstractDatabaser
         parent::__construct($name ?? 'Mysql');
     }
 
+    public function getInsertId(): int
+    {
+        return (int) $this->connection->insert_id;
+    }
+
     protected function assignResult(?object $result): DatabaserResultInterface
     {
         if ($result instanceof mysqli_result) {
@@ -71,11 +76,6 @@ class MysqlDatabaser extends AbstractDatabaser
         }
 
         return new EmptyDatabaserResult();
-    }
-
-    public function lastInsertId(): int
-    {
-        return (int) $this->connection->insert_id;
     }
 
     protected function executeQueries(string $queries): ?object

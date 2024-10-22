@@ -41,6 +41,32 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
         }
     }
 
+    /**
+     * @inheritDoc
+     */
+    public function getAffectedRowsCount(): int
+    {
+        return $this->affectedRows;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getRowsCount(): int
+    {
+        return (int) $this->result->num_rows;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function seek(int $i = 0): static
+    {
+        $this->result->data_seek($i);
+
+        return $this;
+    }
+
     protected function fetchAllRows(): array
     {
         return $this->result->fetch_all();
@@ -66,29 +92,31 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
         return $columns;
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function seek(int $i = 0): static
+    protected function typifyRow(array $row, bool $assoc = true): array
     {
-        $this->result->data_seek($i);
+        foreach ($this->colTypes as $i => $type) {
+            if (null !== $row[$i]) {
+                continue;
+            }
 
-        return $this;
+            $row[$i] = match ($type) {
+                DatabaserResultTypeEnum::INT => (int) $row[$i],
+                DatabaserResultTypeEnum::FLOAT => (float) $row[$i],
+                DatabaserResultTypeEnum::JSON => json_decode((string) $row[$i], $assoc),
+                default => null,
+            };
+        }
+
+        return $row;
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function affectedRows(): int
+    protected function typify(mixed $value, DatabaserResultTypeEnum $type): mixed
     {
-        return $this->affectedRows;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function numRows(): int
-    {
-        return (int) $this->result->num_rows;
+        return match ($type) {
+            DatabaserResultTypeEnum::INT => (int) $value,
+            DatabaserResultTypeEnum::FLOAT => (float) $value,
+            DatabaserResultTypeEnum::JSON => json_decode((string) $value, true),
+            default => null,
+        };
     }
 }

@@ -13,25 +13,6 @@ interface DatabaserInterface
     public function getName(): string;
 
     /**
-     * Begins transaction.
-     */
-    public function begin(?string $isolation = null): static;
-
-    /**
-     * Commits transaction. If nothing was after begin, then ignores begin.
-     *
-     * @throws DatabaserException
-     */
-    public function commit(): static;
-
-    /**
-     * Rollbacks transaction.
-     *
-     * @throws DatabaserException
-     */
-    public function rollback(bool $full = false): static;
-
-    /**
      * Executes query and returns result.
      *
      * @throws DatabaserException
@@ -57,7 +38,31 @@ interface DatabaserInterface
      *
      * @throws DatabaserException
      */
-    public function lastInsertId(): int;
+    public function getInsertId(): int;
+
+    /**
+     * Begins transaction.
+     */
+    public function begin(?string $isolation = null): static;
+
+    /**
+     * Commits transaction. If nothing was after begin, then ignores begin.
+     *
+     * @throws DatabaserException
+     */
+    public function commit(): static;
+
+    /**
+     * Rollbacks transaction.
+     *
+     * @throws DatabaserException
+     */
+    public function rollback(): static;
+
+    /**
+     * Gets transaction status.
+     */
+    public function isInTrans(): bool;
 
     /**
      * Formats numbers for queries.
@@ -128,11 +133,6 @@ interface DatabaserInterface
      * @param string[] $expressions
      */
     public function spaces(array $expressions, string $default = ''): string;
-
-    /**
-     * Gets transaction status.
-     */
-    public function isInTrans(): bool;
 
     /**
      * Gets timer of executed queries.

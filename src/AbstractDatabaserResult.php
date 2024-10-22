@@ -8,7 +8,6 @@ use SWF\Enum\DatabaserResultTypeEnum;
 use SWF\Exception\DatabaserException;
 use SWF\Interface\DatabaserResultInterface;
 use function is_array;
-use function is_object;
 use function is_string;
 
 abstract class AbstractDatabaserResult implements DatabaserResultInterface
@@ -22,11 +21,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
      * @var DatabaserResultTypeEnum[]
      */
     protected array $colTypes = [];
-
-    /**
-     * @return mixed[][]
-     */
-    abstract protected function fetchAllRows(): array;
 
     /**
      * @inheritDoc
@@ -69,11 +63,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
 
         return $rows;
     }
-
-    /**
-     * @return mixed[]|false
-     */
-    abstract protected function fetchNextRow(): array|false;
 
     /**
      * @inheritDoc
@@ -186,8 +175,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         return null === $class ? (object) $row : (DatabaserRegistry::$denormalizer)($row, $class);
     }
 
-    abstract protected function fetchNextRowColumn(int $i): false|float|int|null|string;
-
     /**
      * @inheritDoc
      */
@@ -225,11 +212,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     }
 
     /**
-     * @return mixed[]
-     */
-    abstract protected function fetchAllRowsColumns(int $i): array;
-
-    /**
      * @inheritDoc
      */
     public function fetchAllColumns(int $i = 0): array
@@ -251,27 +233,56 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     }
 
     /**
-     * @param mixed[]|object $row
-     *
+     * @inheritDoc
+     */
+    public function getAffectedRowsCount(): int
+    {
+        return 0;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getRowsCount(): int
+    {
+        return 0;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function seek(int $i = 0): static
+    {
+        return $this;
+    }
+
+    /**
+     * @return mixed[][]
+     */
+    protected function fetchAllRows(): array
+    {
+        return [];
+    }
+
+    /**
+     * @return mixed[]|false
+     */
+    protected function fetchNextRow(): array|false
+    {
+        return false;
+    }
+
+    protected function fetchNextRowColumn(int $i): false|float|int|null|string
+    {
+        return false;
+    }
+
+    /**
      * @return mixed[]
      */
-    private function camelizeRow(array|object $row): array
+    protected function fetchAllRowsColumns(int $i): array
     {
-        $result = [];
-        foreach ((array) $row as $key => $value) {
-            if (is_string($key)) {
-                $key = lcfirst(strtr(ucwords($key, '_'), ['_' => '']));
-            }
-            if (is_array($value)) {
-                $result[$key] = $this->camelizeRow($value);
-            } elseif (is_object($value)) {
-                $result[$key] = (object) $this->camelizeRow($value);
-            } else {
-                $result[$key] = $value;
-            }
-        }
-
-        return $result;
+        return [];
     }
 
     /**
@@ -281,29 +292,30 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
      */
     protected function typifyRow(array $row, bool $assoc = true): array
     {
-        foreach ($this->colTypes as $i => $type) {
-            if (null === $row[$i]) {
-                continue;
-            }
-
-            $row[$i] = match ($type) {
-                DatabaserResultTypeEnum::INT => (int) $row[$i],
-                DatabaserResultTypeEnum::FLOAT => (float) $row[$i],
-                DatabaserResultTypeEnum::BOOL => ('t' === $row[$i]),
-                DatabaserResultTypeEnum::JSON => json_decode((string) $row[$i], $assoc),
-            };
-        }
-
         return $row;
     }
 
     protected function typify(mixed $value, DatabaserResultTypeEnum $type): mixed
     {
-        return match ($type) {
-            DatabaserResultTypeEnum::INT => (int) $value,
-            DatabaserResultTypeEnum::FLOAT => (float) $value,
-            DatabaserResultTypeEnum::BOOL => ('t' === $value),
-            DatabaserResultTypeEnum::JSON => json_decode((string) $value, true),
-        };
+        return $value;
+    }
+
+    /**
+     * @param mixed[] $row
+     *
+     * @return mixed[]
+     */
+    private function camelizeRow(array $row): array
+    {
+        $result = [];
+        foreach ($row as $key => $value) {
+            if (is_string($key)) {
+                $key = lcfirst(strtr(ucwords($key, '_'), ['_' => '']));
+            }
+
+            $result[$key] = is_array($value) ? $this->camelizeRow($value) : $value;
+        }
+
+        return $result;
     }
 }
