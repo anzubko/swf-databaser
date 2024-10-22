@@ -56,7 +56,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
     protected function makeSavePointName(int $savePointId): string
     {
-        return sprintf('SWF_POINT_%d', $savePointId);
+        return sprintf('SWF_SAVEPOINT_%d', $savePointId);
     }
 
     protected function makeCreateSavePointCommand(int $savePointId): string
