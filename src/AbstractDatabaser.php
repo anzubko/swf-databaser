@@ -216,7 +216,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     /**
      * @inheritDoc
      */
-    public function getLastInsertId(): int
+    public function lastInsertId(): int
     {
         return 0;
     }

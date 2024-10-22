@@ -57,7 +57,7 @@ interface DatabaserInterface
      *
      * @throws DatabaserException
      */
-    public function getLastInsertId(): int;
+    public function lastInsertId(): int;
 
     /**
      * Formats numbers for queries.
