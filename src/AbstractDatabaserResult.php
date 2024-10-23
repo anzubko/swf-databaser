@@ -10,6 +10,9 @@ use SWF\Interface\DatabaserResultInterface;
 use function is_array;
 use function is_string;
 
+/**
+ * @internal
+ */
 abstract class AbstractDatabaserResult implements DatabaserResultInterface
 {
     /**
@@ -57,7 +60,11 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
                     if (DatabaserRegistry::$camelize) {
                         $row = $this->camelizeRow($row);
                     }
-                    $row = null === $class ? (object) $row : (DatabaserRegistry::$denormalizer)($row, $class);
+                    if (null === $class) {
+                        $row = (object) $row;
+                    } else {
+                        $row = (DatabaserRegistry::$denormalizer)($row, $class);
+                    }
                     break;
                 default:
                     $row = $this->typifyRow($row);

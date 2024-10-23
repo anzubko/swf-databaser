@@ -90,7 +90,11 @@ class MysqlDatabaser extends AbstractDatabaser
             throw (new DatabaserException($e->getMessage()))->setState($e->getSqlState())->stateToMessage();
         }
 
-        return false === $result ? null : $result;
+        if (false === $result) {
+            return null;
+        }
+
+        return $result;
     }
 
     protected function escapeString(string $string): string

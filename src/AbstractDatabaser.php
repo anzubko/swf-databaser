@@ -14,6 +14,9 @@ use function is_float;
 use function is_int;
 use function is_scalar;
 
+/**
+ * @internal
+ */
 abstract class AbstractDatabaser implements DatabaserInterface
 {
     private float $timer = 0.0;
@@ -118,19 +121,9 @@ abstract class AbstractDatabaser implements DatabaserInterface
         return 'START TRANSACTION';
     }
 
-    protected function makeBeginWIsolationCommand(string $isolation): string
+    protected function makeParametrizedBeginCommand(string $isolation): string
     {
         return sprintf('SET TRANSACTION %s; START TRANSACTION', $isolation);
-    }
-
-    protected function makeCommitCommand(): string
-    {
-        return 'COMMIT';
-    }
-
-    protected function makeRollbackCommand(): string
-    {
-        return 'ROLLBACK';
     }
 
     protected function isSavePointsSupported(): bool
@@ -148,16 +141,6 @@ abstract class AbstractDatabaser implements DatabaserInterface
         return sprintf('SAVEPOINT %s', $this->makeSavePointName($savePointId));
     }
 
-    protected function makeReleaseSavePointCommand(int $savePointId): string
-    {
-        return sprintf('RELEASE SAVEPOINT %s', $this->makeSavePointName($savePointId));
-    }
-
-    protected function makeRollbackToSavePointCommand(int $savePointId): string
-    {
-        return sprintf('ROLLBACK TO %s', $this->makeSavePointName($savePointId));
-    }
-
     /**
      * @inheritDoc
      */
@@ -168,7 +151,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
             if (null === $isolation) {
                 $this->queue->add($this->makeBeginCommand(), DatabaserQueueTypeEnum::BEGIN);
             } else {
-                $this->queue->add($this->makeBeginWIsolationCommand($isolation), DatabaserQueueTypeEnum::BEGIN);
+                $this->queue->add($this->makeParametrizedBeginCommand($isolation), DatabaserQueueTypeEnum::BEGIN);
             }
         } elseif ($this->isSavePointsSupported()) {
             $this->queue->add($this->makeCreateSavePointCommand($this->depth->get()), DatabaserQueueTypeEnum::SAVEPOINT);
@@ -177,6 +160,16 @@ abstract class AbstractDatabaser implements DatabaserInterface
         $this->depth->inc();
 
         return $this;
+    }
+
+    protected function makeCommitCommand(): string
+    {
+        return 'COMMIT';
+    }
+
+    protected function makeReleaseSavePointCommand(int $savePointId): string
+    {
+        return sprintf('RELEASE SAVEPOINT %s', $this->makeSavePointName($savePointId));
     }
 
     /**
@@ -207,6 +200,16 @@ abstract class AbstractDatabaser implements DatabaserInterface
         $this->depth->dec();
 
         return $this;
+    }
+
+    protected function makeRollbackCommand(): string
+    {
+        return 'ROLLBACK';
+    }
+
+    protected function makeRollbackToSavePointCommand(int $savePointId): string
+    {
+        return sprintf('ROLLBACK TO %s', $this->makeSavePointName($savePointId));
     }
 
     /**

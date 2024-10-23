@@ -101,7 +101,7 @@ class PgsqlDatabaser extends AbstractDatabaser
         throw (new DatabaserException($lastError))->stateToMessage();
     }
 
-    protected function makeBeginWIsolationCommand(string $isolation): string
+    protected function makeParametrizedBeginCommand(string $isolation): string
     {
         return sprintf('START TRANSACTION %s', $isolation);
     }
