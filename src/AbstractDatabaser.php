@@ -113,12 +113,13 @@ abstract class AbstractDatabaser implements DatabaserInterface
         return $this;
     }
 
-    protected function makeBeginCommand(?string $isolation = null): string
+    protected function makeBeginCommand(): string
     {
-        if (null === $isolation) {
-            return 'START TRANSACTION';
-        }
+        return 'START TRANSACTION';
+    }
 
+    protected function makeBeginWIsolationCommand(string $isolation): string
+    {
         return sprintf('SET TRANSACTION %s; START TRANSACTION', $isolation);
     }
 
@@ -164,7 +165,11 @@ abstract class AbstractDatabaser implements DatabaserInterface
     {
         if ($this->depth->get() === 0) {
             $this->execute();
-            $this->queue->add($this->makeBeginCommand($isolation), DatabaserQueueTypeEnum::BEGIN);
+            if (null === $isolation) {
+                $this->queue->add($this->makeBeginCommand(), DatabaserQueueTypeEnum::BEGIN);
+            } else {
+                $this->queue->add($this->makeBeginWIsolationCommand($isolation), DatabaserQueueTypeEnum::BEGIN);
+            }
         } elseif ($this->isSavePointsSupported()) {
             $this->queue->add($this->makeCreateSavePointCommand($this->depth->get()), DatabaserQueueTypeEnum::SAVEPOINT);
         }
