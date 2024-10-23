@@ -23,6 +23,14 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     protected array $colTypes = [];
 
     /**
+     * @return mixed[][]
+     */
+    protected function fetchAllRows(): array
+    {
+        return [];
+    }
+
+    /**
      * @inheritDoc
      */
     public function fetchAll(?string $class = null): array
@@ -62,6 +70,14 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         }
 
         return $rows;
+    }
+
+    /**
+     * @return mixed[]|false
+     */
+    protected function fetchNextRow(): array|false
+    {
+        return false;
     }
 
     /**
@@ -175,6 +191,11 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         return null === $class ? (object) $row : (DatabaserRegistry::$denormalizer)($row, $class);
     }
 
+    protected function fetchNextRowColumn(int $i): false|float|int|null|string
+    {
+        return false;
+    }
+
     /**
      * @inheritDoc
      */
@@ -209,6 +230,14 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         }
 
         return $column;
+    }
+
+    /**
+     * @return mixed[]
+     */
+    protected function fetchAllRowsColumns(int $i): array
+    {
+        return [];
     }
 
     /**
@@ -254,35 +283,6 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function seek(int $i = 0): static
     {
         return $this;
-    }
-
-    /**
-     * @return mixed[][]
-     */
-    protected function fetchAllRows(): array
-    {
-        return [];
-    }
-
-    /**
-     * @return mixed[]|false
-     */
-    protected function fetchNextRow(): array|false
-    {
-        return false;
-    }
-
-    protected function fetchNextRowColumn(int $i): false|float|int|null|string
-    {
-        return false;
-    }
-
-    /**
-     * @return mixed[]
-     */
-    protected function fetchAllRowsColumns(int $i): array
-    {
-        return [];
     }
 
     /**

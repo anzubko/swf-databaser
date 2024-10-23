@@ -41,6 +41,46 @@ abstract class AbstractDatabaser implements DatabaserInterface
     }
 
     /**
+     * @throws DatabaserException
+     */
+    abstract protected function assignResult(?object $result): DatabaserResultInterface;
+
+    /**
+     * @throws DatabaserException
+     */
+    abstract protected function executeQueries(string $queries): ?object;
+
+    /**
+     * @throws DatabaserException
+     */
+    private function execute(): ?object
+    {
+        if ($this->queue->count() === 0) {
+            return null;
+        }
+
+        $timer = gettimeofday(true);
+
+        $queries = $this->queue->takeAwayQueries();
+
+        try {
+            return $this->executeQueries(implode('; ', $queries));
+        } finally {
+            $timer = gettimeofday(true) - $timer;
+
+            $this->timer += $timer;
+            DatabaserRegistry::$timer += $timer;
+
+            $this->counter++;
+            DatabaserRegistry::$counter++;
+
+            if (null !== DatabaserRegistry::$profiler) {
+                (DatabaserRegistry::$profiler)($this, $timer, $queries);
+            }
+        }
+    }
+
+    /**
      * @inheritDoc
      */
     public function query(string $query): DatabaserResultInterface
@@ -71,6 +111,50 @@ abstract class AbstractDatabaser implements DatabaserInterface
         $this->execute();
 
         return $this;
+    }
+
+    protected function makeBeginCommand(?string $isolation = null): string
+    {
+        if (null === $isolation) {
+            return 'START TRANSACTION';
+        }
+
+        return sprintf('SET TRANSACTION %s; START TRANSACTION', $isolation);
+    }
+
+    protected function makeCommitCommand(): string
+    {
+        return 'COMMIT';
+    }
+
+    protected function makeRollbackCommand(): string
+    {
+        return 'ROLLBACK';
+    }
+
+    protected function isSavePointsSupported(): bool
+    {
+        return true;
+    }
+
+    protected function makeSavePointName(int $savePointId): string
+    {
+        return sprintf('SWF_SAVEPOINT_%d', $savePointId);
+    }
+
+    protected function makeCreateSavePointCommand(int $savePointId): string
+    {
+        return sprintf('SAVEPOINT %s', $this->makeSavePointName($savePointId));
+    }
+
+    protected function makeReleaseSavePointCommand(int $savePointId): string
+    {
+        return sprintf('RELEASE SAVEPOINT %s', $this->makeSavePointName($savePointId));
+    }
+
+    protected function makeRollbackToSavePointCommand(int $savePointId): string
+    {
+        return sprintf('ROLLBACK TO %s', $this->makeSavePointName($savePointId));
     }
 
     /**
@@ -164,6 +248,11 @@ abstract class AbstractDatabaser implements DatabaserInterface
     {
         return $this->depth->get() > 0;
     }
+
+    /**
+     * @throws DatabaserException
+     */
+    abstract protected function escapeString(string $string): string;
 
     /**
      * @inheritDoc
@@ -263,7 +352,11 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function every(array $expressions, string $default = 'true'): string
     {
-        return count($expressions) === 0 ? $default : implode(' AND ', $expressions);
+        if (count($expressions) === 0) {
+            return $default;
+        }
+
+        return implode(' AND ', $expressions);
     }
 
     /**
@@ -271,7 +364,11 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function any(array $expressions, string $default = 'true'): string
     {
-        return count($expressions) === 0 ? $default : implode(' OR ', $expressions);
+        if (count($expressions) === 0) {
+            return $default;
+        }
+
+        return implode(' OR ', $expressions);
     }
 
     /**
@@ -279,7 +376,11 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function commas(array $expressions, string $default = 'true'): string
     {
-        return count($expressions) === 0 ? $default : implode(', ', $expressions);
+        if (count($expressions) === 0) {
+            return $default;
+        }
+
+        return implode(', ', $expressions);
     }
 
     /**
@@ -287,7 +388,15 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function parentheses(array $expressions, string $default = ''): string
     {
-        return count($expressions) === 0 ? $default : implode(', ', array_map(fn($e) => sprintf('(%s)', $e), $expressions));
+        if (count($expressions) === 0) {
+            return $default;
+        }
+
+        foreach ($expressions as $i => $expression) {
+            $expressions[$i] = sprintf('(%s)', $expression);
+        }
+
+        return implode(', ', $expressions);
     }
 
     /**
@@ -295,7 +404,11 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function pluses(array $expressions, string $default = ''): string
     {
-        return count($expressions) === 0 ? $default : implode(' + ', $expressions);
+        if (count($expressions) === 0) {
+            return $default;
+        }
+
+        return implode(' + ', $expressions);
     }
 
     /**
@@ -303,7 +416,11 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function spaces(array $expressions, string $default = ''): string
     {
-        return count($expressions) === 0 ? $default : implode(' ', $expressions);
+        if (count($expressions) === 0) {
+            return $default;
+        }
+
+        return implode(' ', $expressions);
     }
 
     /**
@@ -320,94 +437,5 @@ abstract class AbstractDatabaser implements DatabaserInterface
     public function getCounter(): int
     {
         return $this->counter;
-    }
-
-    protected function makeBeginCommand(?string $isolation = null): string
-    {
-        if (null === $isolation) {
-            return 'START TRANSACTION';
-        }
-
-        return sprintf('SET TRANSACTION %s; START TRANSACTION', $isolation);
-    }
-
-    protected function makeCommitCommand(): string
-    {
-        return 'COMMIT';
-    }
-
-    protected function makeRollbackCommand(): string
-    {
-        return 'ROLLBACK';
-    }
-
-    protected function isSavePointsSupported(): bool
-    {
-        return true;
-    }
-
-    protected function makeSavePointName(int $savePointId): string
-    {
-        return sprintf('SWF_SAVEPOINT_%d', $savePointId);
-    }
-
-    protected function makeCreateSavePointCommand(int $savePointId): string
-    {
-        return sprintf('SAVEPOINT %s', $this->makeSavePointName($savePointId));
-    }
-
-    protected function makeReleaseSavePointCommand(int $savePointId): string
-    {
-        return sprintf('RELEASE SAVEPOINT %s', $this->makeSavePointName($savePointId));
-    }
-
-    protected function makeRollbackToSavePointCommand(int $savePointId): string
-    {
-        return sprintf('ROLLBACK TO %s', $this->makeSavePointName($savePointId));
-    }
-
-    /**
-     * @throws DatabaserException
-     */
-    abstract protected function assignResult(?object $result): DatabaserResultInterface;
-
-    /**
-     * @throws DatabaserException
-     */
-    abstract protected function escapeString(string $string): string;
-
-    /**
-     * @throws DatabaserException
-     */
-    abstract protected function executeQueries(string $queries): ?object;
-
-    /**
-     * @throws DatabaserException
-     */
-    private function execute(): ?object
-    {
-        if ($this->queue->count() === 0) {
-            return null;
-        }
-
-        $timer = gettimeofday(true);
-
-        $queries = $this->queue->takeAwayQueries();
-
-        try {
-            return $this->executeQueries(implode('; ', $queries));
-        } finally {
-            $timer = gettimeofday(true) - $timer;
-
-            $this->timer += $timer;
-            DatabaserRegistry::$timer += $timer;
-
-            $this->counter++;
-            DatabaserRegistry::$counter++;
-
-            if (null !== DatabaserRegistry::$profiler) {
-                (DatabaserRegistry::$profiler)($this, $timer, $queries);
-            }
-        }
     }
 }

@@ -77,15 +77,6 @@ class PgsqlDatabaser extends AbstractDatabaser
         throw (new DatabaserException('Not implemented'))->stateToMessage();
     }
 
-    protected function makeBeginCommand(?string $isolation = null): string
-    {
-        if (null === $isolation) {
-            return 'START TRANSACTION';
-        }
-
-        return sprintf('START TRANSACTION %s', $isolation);
-    }
-
     protected function assignResult(?object $result): DatabaserResultInterface
     {
         if ($result instanceof PgSqlResult) {
@@ -108,6 +99,15 @@ class PgsqlDatabaser extends AbstractDatabaser
         }
 
         throw (new DatabaserException($lastError))->stateToMessage();
+    }
+
+    protected function makeBeginCommand(?string $isolation = null): string
+    {
+        if (null === $isolation) {
+            return 'START TRANSACTION';
+        }
+
+        return sprintf('START TRANSACTION %s', $isolation);
     }
 
     protected function escapeString(string $string): string
