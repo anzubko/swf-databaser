@@ -162,13 +162,14 @@ abstract class AbstractDatabaser implements DatabaserInterface
      */
     public function begin(?string $isolation = null): static
     {
-        $this->depth->inc();
-
-        if ($this->depth->get() === 1) {
+        if ($this->depth->get() === 0) {
+            $this->execute();
             $this->queue->add($this->makeBeginCommand($isolation), DatabaserQueueTypeEnum::BEGIN);
         } elseif ($this->isSavePointsSupported()) {
-            $this->queue->add($this->makeCreateSavePointCommand($this->depth->get() - 1), DatabaserQueueTypeEnum::SAVEPOINT);
+            $this->queue->add($this->makeCreateSavePointCommand($this->depth->get()), DatabaserQueueTypeEnum::SAVEPOINT);
         }
+
+        $this->depth->inc();
 
         return $this;
     }
@@ -187,22 +188,18 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
         if (DatabaserQueueTypeEnum::BEGIN === $this->queue->getLastType()) {
             $this->queue->pop();
-            $this->depth->dec();
-            $this->execute();
-        } elseif ($this->depth->get() > 1 && $this->isSavePointsSupported()) {
-            $this->queue->add($this->makeReleaseSavePointCommand($this->depth->get() - 1));
-            $this->execute();
-            $this->depth->dec();
-        } elseif ($this->depth->get() > 1) {
-            $this->depth->dec();
-            $this->execute();
-        } elseif ($this->depth->get() > 0) {
+        } elseif ($this->depth->get() === 1) {
             $this->queue->add($this->makeCommitCommand());
             $this->execute();
-            $this->depth->dec();
-        } else {
-            $this->depth->dec();
+        } elseif ($this->depth->get() > 1) {
+            if ($this->isSavePointsSupported()) {
+                $this->queue->add($this->makeReleaseSavePointCommand($this->depth->get() - 1));
+            }
+
+            $this->execute();
         }
+
+        $this->depth->dec();
 
         return $this;
     }
@@ -221,22 +218,18 @@ abstract class AbstractDatabaser implements DatabaserInterface
 
         if (DatabaserQueueTypeEnum::BEGIN === $this->queue->getLastType()) {
             $this->queue->pop();
-            $this->depth->dec();
-            $this->execute();
-        } elseif ($this->depth->get() > 1 && $this->isSavePointsSupported()) {
-            $this->queue->add($this->makeRollbackToSavePointCommand($this->depth->get() - 1));
-            $this->execute();
-            $this->depth->dec();
-        } elseif ($this->depth->get() > 1) {
-            $this->depth->dec();
-            $this->execute();
-        } elseif ($this->depth->get() > 0) {
+        } elseif ($this->depth->get() === 1) {
             $this->queue->add($this->makeRollbackCommand());
             $this->execute();
-            $this->depth->dec();
-        } else {
-            $this->depth->dec();
+        } elseif ($this->depth->get() > 1) {
+            if ($this->isSavePointsSupported()) {
+                $this->queue->add($this->makeRollbackToSavePointCommand($this->depth->get() - 1));
+            }
+
+            $this->execute();
         }
+
+        $this->depth->dec();
 
         return $this;
     }

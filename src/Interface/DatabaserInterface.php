@@ -42,6 +42,8 @@ interface DatabaserInterface
 
     /**
      * Begins transaction.
+     *
+     * @throws DatabaserException
      */
     public function begin(?string $isolation = null): static;
 
