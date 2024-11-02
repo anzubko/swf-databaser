@@ -57,7 +57,7 @@ class PgsqlDatabaser extends AbstractDatabaser
             $connection = pg_connect(implode(' ', $params), PGSQL_CONNECT_FORCE_NEW);
         }
 
-        if (false === $connection) {
+        if ($connection === false) {
             throw (new DatabaserException('Error in the process of establishing a connection'))->stateToMessage();
         }
 

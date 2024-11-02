@@ -38,9 +38,9 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
      */
     public function fetchAll(?string $class = null): array
     {
-        if (null === $class) {
+        if ($class === null) {
             $fetchMode = DatabaserRegistry::$fetchMode ?? DatabaserResultModeEnum::ASSOC;
-        } elseif (null === DatabaserRegistry::$denormalizer) {
+        } elseif (DatabaserRegistry::$denormalizer === null) {
             throw new DatabaserException('For use denormalization you must set denormalizer before');
         } else {
             $fetchMode = DatabaserResultModeEnum::OBJECT;
@@ -60,7 +60,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
                     if (DatabaserRegistry::$camelize) {
                         $row = $this->camelizeRow($row);
                     }
-                    if (null === $class) {
+                    if ($class === null) {
                         $row = (object) $row;
                     } else {
                         $row = (DatabaserRegistry::$denormalizer)($row, $class);
@@ -108,7 +108,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function fetchRow(): array|false
     {
         $row = $this->fetchNextRow();
-        if (false === $row) {
+        if ($row === false) {
             return false;
         }
 
@@ -141,7 +141,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function fetchAssoc(): array|false
     {
         $row = $this->fetchNextRow();
-        if (false === $row) {
+        if ($row === false) {
             return false;
         }
 
@@ -159,7 +159,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function iterateObject(?string $class = null): iterable
     {
         if (null !== $class) {
-            if (null === DatabaserRegistry::$denormalizer) {
+            if (DatabaserRegistry::$denormalizer === null) {
                 throw new DatabaserException('For use denormalization you must set denormalizer before');
             }
         }
@@ -170,7 +170,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
                 $row = $this->camelizeRow($row);
             }
 
-            yield null === $class ? (object) $row : (DatabaserRegistry::$denormalizer)($row, $class);
+            yield $class === null ? (object) $row : (DatabaserRegistry::$denormalizer)($row, $class);
         }
     }
 
@@ -180,13 +180,13 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function fetchObject(?string $class = null)
     {
         if (null !== $class) {
-            if (null === DatabaserRegistry::$denormalizer) {
+            if (DatabaserRegistry::$denormalizer === null) {
                 throw new DatabaserException('For use denormalization you must set denormalizer before');
             }
         }
 
         $row = $this->fetchNextRow();
-        if (false === $row) {
+        if ($row === false) {
             return false;
         }
 
@@ -195,7 +195,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
             $row = $this->camelizeRow($row);
         }
 
-        return null === $class ? (object) $row : (DatabaserRegistry::$denormalizer)($row, $class);
+        return $class === null ? (object) $row : (DatabaserRegistry::$denormalizer)($row, $class);
     }
 
     protected function fetchNextRowColumn(int $i): false|float|int|null|string
@@ -226,7 +226,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
     public function fetchColumn(int $i = 0): mixed
     {
         $column = $this->fetchNextRowColumn($i);
-        if (false === $column) {
+        if ($column === false) {
             return false;
         }
         if (isset($column, $this->colTypes[$i])) {
@@ -255,7 +255,7 @@ abstract class AbstractDatabaserResult implements DatabaserResultInterface
         $columns = $this->fetchAllRowsColumns($i);
         if (isset($this->colTypes[$i])) {
             foreach ($columns as $j => $column) {
-                if (null === $column) {
+                if ($column === null) {
                     continue;
                 }
                 $columns[$j] = $this->typify($column, $this->colTypes[$i]);

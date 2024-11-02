@@ -38,9 +38,9 @@ class MysqlDatabaser extends AbstractDatabaser
         mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
         $socket = null;
-        if (null === $host) {
+        if ($host === null) {
             $host = (string) ini_get('mysqli.default_host');
-            if ('' === $host) {
+            if ($host === '') {
                 $host = 'localhost';
             }
         } elseif (str_starts_with($host, '/')) {
@@ -90,7 +90,7 @@ class MysqlDatabaser extends AbstractDatabaser
             throw (new DatabaserException($e->getMessage()))->setState($e->getSqlState())->stateToMessage();
         }
 
-        if (false === $result) {
+        if ($result === false) {
             return null;
         }
 

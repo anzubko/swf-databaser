@@ -85,14 +85,14 @@ class PgsqlDatabaserResult extends AbstractDatabaserResult
     protected function typifyRow(array $row, bool $assoc = true): array
     {
         foreach ($this->colTypes as $i => $type) {
-            if (null === $row[$i]) {
+            if ($row[$i] === null) {
                 continue;
             }
 
             $row[$i] = match ($type) {
                 DatabaserResultTypeEnum::INT => (int) $row[$i],
                 DatabaserResultTypeEnum::FLOAT => (float) $row[$i],
-                DatabaserResultTypeEnum::BOOL => ('t' === $row[$i]),
+                DatabaserResultTypeEnum::BOOL => ($row[$i] === 't'),
                 DatabaserResultTypeEnum::JSON => json_decode((string) $row[$i], $assoc),
             };
         }
@@ -105,7 +105,7 @@ class PgsqlDatabaserResult extends AbstractDatabaserResult
         return match ($type) {
             DatabaserResultTypeEnum::INT => (int) $value,
             DatabaserResultTypeEnum::FLOAT => (float) $value,
-            DatabaserResultTypeEnum::BOOL => ('t' === $value),
+            DatabaserResultTypeEnum::BOOL => ($value === 't'),
             DatabaserResultTypeEnum::JSON => json_decode((string) $value, true),
         };
     }

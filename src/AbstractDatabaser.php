@@ -148,7 +148,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     {
         if ($this->depth->get() === 0) {
             $this->execute();
-            if (null === $isolation) {
+            if ($isolation === null) {
                 $this->queue->add($this->makeBeginCommand(), DatabaserQueueTypeEnum::BEGIN);
             } else {
                 $this->queue->add($this->makeParametrizedBeginCommand($isolation), DatabaserQueueTypeEnum::BEGIN);
@@ -178,13 +178,13 @@ abstract class AbstractDatabaser implements DatabaserInterface
     public function commit(): static
     {
         if ($this->isSavePointsSupported()) {
-            while (DatabaserQueueTypeEnum::SAVEPOINT === $this->queue->getLastType()) {
+            while ($this->queue->getLastType() === DatabaserQueueTypeEnum::SAVEPOINT) {
                 $this->queue->pop();
                 $this->depth->dec();
             }
         }
 
-        if (DatabaserQueueTypeEnum::BEGIN === $this->queue->getLastType()) {
+        if ($this->queue->getLastType() === DatabaserQueueTypeEnum::BEGIN) {
             $this->queue->pop();
         } elseif ($this->depth->get() === 1) {
             $this->queue->add($this->makeCommitCommand());
@@ -218,13 +218,13 @@ abstract class AbstractDatabaser implements DatabaserInterface
     public function rollback(): static
     {
         if ($this->isSavePointsSupported()) {
-            while (DatabaserQueueTypeEnum::SAVEPOINT === $this->queue->getLastType()) {
+            while ($this->queue->getLastType() === DatabaserQueueTypeEnum::SAVEPOINT) {
                 $this->queue->pop();
                 $this->depth->dec();
             }
         }
 
-        if (DatabaserQueueTypeEnum::BEGIN === $this->queue->getLastType()) {
+        if ($this->queue->getLastType() === DatabaserQueueTypeEnum::BEGIN) {
             $this->queue->pop();
         } elseif ($this->depth->get() === 1) {
             $this->queue->add($this->makeRollbackCommand());
@@ -261,7 +261,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     public function number(mixed $number, string $null = 'null'): string
     {
         switch (true) {
-            case null === $number:
+            case $number === null:
                 return $null;
             case is_scalar($number):
                 return (string) (float) $number;
@@ -282,7 +282,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     public function boolean(mixed $boolean, string $null = 'null'): string
     {
         switch (true) {
-            case null === $boolean:
+            case $boolean === null:
                 return $null;
             case is_scalar($boolean):
                 return $boolean ? 'true' : 'false';
@@ -303,7 +303,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     public function string(mixed $string, string $null = 'null'): string
     {
         switch (true) {
-            case null === $string:
+            case $string === null:
                 return $null;
             case $string instanceof DateTimeInterface:
                 return $this->escapeString($string->format('Y-m-d H:i:s.u'));
@@ -326,7 +326,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
     public function scalar(mixed $scalar, string $null = 'null'): string
     {
         switch (true) {
-            case null === $scalar:
+            case $scalar === null:
                 return $null;
             case $scalar instanceof DateTimeInterface:
                 return $this->escapeString($scalar->format('Y-m-d H:i:s.u'));

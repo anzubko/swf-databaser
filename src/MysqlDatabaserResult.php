@@ -12,7 +12,7 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
         private readonly mysqli_result $result,
         private readonly int $affectedRows,
     ) {
-        if (0 === $this->result->field_count) {
+        if ($this->result->field_count === 0) {
             return;
         }
 
