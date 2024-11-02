@@ -35,19 +35,19 @@ class PgsqlDatabaser extends AbstractDatabaser
         string $charset = 'utf-8',
     ) {
         $params = [];
-        if (null !== $host) {
+        if ($host !== null) {
             $params[] = sprintf('host=%s', $host);
         }
-        if (null !== $port) {
+        if ($port !== null) {
             $params[] = sprintf('port=%d', $port);
         }
-        if (null !== $db) {
+        if ($db !== null) {
             $params[] = sprintf('dbname=%s', $db);
         }
-        if (null !== $user) {
+        if ($user !== null) {
             $params[] = sprintf('user=%s', $user);
         }
-        if (null !== $pass) {
+        if ($pass !== null) {
             $params[] = sprintf('password=%s', $pass);
         }
 
@@ -89,7 +89,7 @@ class PgsqlDatabaser extends AbstractDatabaser
     protected function executeQueries(string $queries): object
     {
         $result = @pg_query($this->connection, $queries);
-        if (false !== $result) {
+        if ($result !== false) {
             return $result;
         }
 

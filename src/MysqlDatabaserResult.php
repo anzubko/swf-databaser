@@ -85,7 +85,7 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
     protected function fetchAllRowsColumns(int $i): array
     {
         $columns = [];
-        while (false !== ($column = $this->result->fetch_column($i))) {
+        while (($column = $this->result->fetch_column($i)) !== false) {
             $columns[] = $column;
         }
 
@@ -95,7 +95,7 @@ class MysqlDatabaserResult extends AbstractDatabaserResult
     protected function typifyRow(array $row, bool $assoc = true): array
     {
         foreach ($this->colTypes as $i => $type) {
-            if (null !== $row[$i]) {
+            if ($row[$i] !== null) {
                 continue;
             }
 

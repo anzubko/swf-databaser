@@ -77,7 +77,7 @@ abstract class AbstractDatabaser implements DatabaserInterface
             $this->counter++;
             DatabaserRegistry::$counter++;
 
-            if (null !== DatabaserRegistry::$profiler) {
+            if (DatabaserRegistry::$profiler !== null) {
                 (DatabaserRegistry::$profiler)($this, $timer, $queries);
             }
         }
